@@ -1,0 +1,89 @@
+{
+  "lang": {
+    "sign_in": "Sign in",
+    "user_name": "Username",
+    "password": "Password",
+    "confirm_password": "Confirm password",
+    "remember_me": "Remember me",
+    "Dont_have_an_account": "Don't have an account?",
+    "sign_up": "Sign up",
+    "dashboard": "Dashboard",
+    "tenants": "Entities",
+    "tenant": "Entity",
+    "profile": "Profile",
+    "user": {
+      "first_name": "Firstname",
+      "last_name": "Lastname",
+      "email": "Email"
+    },
+    "database": {
+      "db_name": "DB Name"
+    },
+    "actions": {
+      "logout": "Logout",
+      "add_new": "Add new",
+      "submit": "Submit",
+      "update": "Update",
+      "add_new_tenant": "Add new tenant"
+    },
+    "logout": "Logout",
+
+    "table": "Table",
+    "material_ui_config": {
+      "title": "Material UI Configurator",
+      "description": "See our dashboard options.",
+      "sidenav": {
+        "title": "Sidenav Colors",
+        "types": "Choose between different sidenav types.",
+        "colors": {
+          "dark": "Dark",
+          "light": "Light",
+          "transparent": "Transparent"
+        }
+      },
+      "navbar": {
+        "fixed": "Navbar Fixed"
+      },
+      "mode": "Light / Dark"
+    },
+    "validations": {
+      "required": "{{field}} is required",
+      "first_name_required": "First name is required",
+      "first_name_not_valid": "Only letters are allowed",
+      "last_name_required": "Last name is required",
+      "last_name_not_valid": "Only letters are allowed",
+      "username": {
+        "required": "Username is required",
+        "not_unique": "This username is already in use. Please choose another one."
+      },
+      "email": {
+        "required": "Email is required",
+        "invalid": "Please enter a valid email address",
+        "not_unique": "This email is already in use. Please choose another one."
+      },
+      "password": {
+        "required": "Password is required",
+        "min_length": "Password must be at least 8 characters long",
+        "max_length": "Password must be at most 20 characters long",
+        "contains_uppercase": "Password must contain at least one uppercase letter",
+        "contains_lowercase": "Password must contain at least one lowercase letter",
+        "contains_digit": "Password must contain at least one digit",
+        "contains_special_char": "Password must contain at least one special character"
+      },
+      "confirm_password": {
+        "required": "Confirm password is required",
+        "mismatch": "Passwords do not match"
+      },
+      "db_name_required": "Database name is required",
+      "username_required": "Username is required"
+    },
+    "persons": "Persons",
+    "person": "Person",
+    "add_new_person": "Add New Person",
+    "edit_person": "Edit Person",
+    "phone_number": "Phone",
+    "address": "Address",
+    "date_of_birth": "Date of Birth",
+    "description": "Description"
+  }
+}
