@@ -1,5 +1,5 @@
 import unittest
-from .functions import add, subtract
+from functions import add, subtract
 
 class TestMyModule(unittest.TestCase):
     def test_add(self):
