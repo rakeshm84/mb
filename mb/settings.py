@@ -87,8 +87,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'mb',
-        'USER': 'remote_user',
-        'PASSWORD': 'CTx56yVjILREMLak8YKx',
+        'USER': 'user_mb',
+        'PASSWORD': 'aZDVknQIyHUrvhfTvatF',
         'HOST': '64.176.170.192',
         'PORT': '3306',
         'OPTIONS': {
@@ -99,8 +99,8 @@ DATABASES = {
     'master': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'mb',
-        'USER': 'remote_user',
-        'PASSWORD': 'CTx56yVjILREMLak8YKx',
+        'USER': 'user_mb',
+        'PASSWORD': 'aZDVknQIyHUrvhfTvatF',
         'HOST': '64.176.170.192',
         'PORT': '3306',                    # Default MySQL port
         'OPTIONS': {
