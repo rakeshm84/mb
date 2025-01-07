@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-b#ly6v+18a5l-)r3!o6qzg6h3j))xsx#7-2_g%_gciwsim=2_#
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['mbapi.local', 'john.mbapi.local', '127.0.0.1']
+# ALLOWED_HOSTS = ['niyud.co.il']
 
 
 # Application definition
@@ -84,16 +84,12 @@ WSGI_APPLICATION = 'mb.wsgi.application'
 
 
 DATABASES = {
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.sqlite3',
-    #     'NAME': BASE_DIR / 'db.sqlite3',
-    # },
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'mb',      # Replace with your database name
-        'USER': 'root',           # Replace with your MySQL username
-        'PASSWORD': '',       # Replace with your MySQL password
-        'HOST': 'localhost',               # Use '127.0.0.1' or your MySQL host
+        'USER': 'rem_user_mb',           # Replace with your MySQL username
+        'PASSWORD': 'nQNkxJPZIIPmttbqVbVO',       # Replace with your MySQL password
+        'HOST': '127.0.0.1',               # Use '127.0.0.1' or your MySQL host
         'PORT': '3306',                    # Default MySQL port
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",  # Optional for strict SQL mode
@@ -103,9 +99,9 @@ DATABASES = {
     'master': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'mb',      # Replace with your database name
-        'USER': 'root',           # Replace with your MySQL username
-        'PASSWORD': '',       # Replace with your MySQL password
-        'HOST': 'localhost',               # Use '127.0.0.1' or your MySQL host
+        'USER': 'rem_user_mb',           # Replace with your MySQL username
+        'PASSWORD': 'nQNkxJPZIIPmttbqVbVO',       # Replace with your MySQL password
+        'HOST': '127.0.0.1',               # Use '127.0.0.1' or your MySQL host
         'PORT': '3306',                    # Default MySQL port
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",  # Optional for strict SQL mode
@@ -167,10 +163,10 @@ REST_FRAMEWORK = {
     ]
 }
 
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-    'http://mb.local'
-]
+# CORS_ALLOWED_ORIGINS = [
+#     'http://localhost:3000',
+#     'http://mb.local'
+# ]
 
 CORS_ALLOW_METHODS = [
     "GET",
@@ -234,4 +230,4 @@ MASTER_DB_DSN = f"mysql://{MASTER_DB['USER']}:{MASTER_DB['PASSWORD']}@{MASTER_DB
 
 SUPPORTED_LANGUAGES = ["en", "he"]
 
-APP_DOMAIN = "mb.local"
+APP_DOMAIN = "niyud.co.il"
