@@ -89,7 +89,7 @@ DATABASES = {
         'NAME': 'mb',
         'USER': 'remote_user',
         'PASSWORD': 'CTx56yVjILREMLak8YKx',
-        'HOST': '127.0.0.1',
+        'HOST': '64.176.170.192',
         'PORT': '3306',
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",  # Optional for strict SQL mode
@@ -101,7 +101,7 @@ DATABASES = {
         'NAME': 'mb',
         'USER': 'remote_user',
         'PASSWORD': 'CTx56yVjILREMLak8YKx',
-        'HOST': '127.0.0.1',
+        'HOST': '64.176.170.192',
         'PORT': '3306',                    # Default MySQL port
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",  # Optional for strict SQL mode
