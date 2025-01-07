@@ -57,7 +57,7 @@ function Tenant() {
     const Data = {
       ...data,
       date_of_birth: formattedDob,
-      desc: desc,
+      // desc: desc,
     };
     try {
       var response = await api.post(url, Data);
@@ -85,6 +85,7 @@ function Tenant() {
       setValue("email", response.data?.user?.email || "");
       setValue("phone_number", response.data?.profile?.phone_number || "");
       setValue("address", response.data?.profile?.address || "");
+      setValue("desc", response.data?.profile?.desc || "");
       const dateOfBirth = moment(response.data.profile.date_of_birth || null);
       setValue("date_of_birth", dateOfBirth);
     } catch (error) {
@@ -331,10 +332,22 @@ function Tenant() {
                     {editMode && (
                       <Grid item xs={12}>
                         <MDBox mb={1}>
-                          <MDTypography variant="button">{t("lang.description")}</MDTypography>
+                          {/* <MDTypography variant="button">{t("lang.description")}</MDTypography>
                           <TinyMCE
                             onInit={(_evt, editor) => (editorRef.current = editor)}
                             initialValue={userData?.profile?.desc || ""}
+                          /> */}
+                          <MDInput
+                            {...register("desc", {
+                              value: userData?.profile?.desc || "",
+                            })}
+                            multiline
+                            rows={4}
+                            type="text"
+                            label={t("lang.description")}
+                            fullWidth
+                            error={!!errors.first_name}
+                            value={watch("desc") || ""}
                           />
                         </MDBox>
                       </Grid>

@@ -42,10 +42,11 @@ function EditProfile({ setEditMode, showAlert }) {
     if (editorRef.current) {
       desc = editorRef.current.getContent();
     }
+    console.log("data", data);
     const Data = {
       ...data,
       date_of_birth: formattedDob,
-      desc: desc,
+      // desc: desc,
     };
     try {
       var response = await api.post(`/person/${user.id}/edit`, Data);
@@ -181,13 +182,23 @@ function EditProfile({ setEditMode, showAlert }) {
             </Grid>
             <Grid item xs={12}>
               <MDBox mb={1}>
-                <MDTypography variant="button">{t("lang.description")}</MDTypography>
-                <TextareaAutosize></TextareaAutosize>
+                {/* <MDTypography variant="button">{t("lang.description")}</MDTypography> */}
                 {/* <TinyMCE
                   onInit={(_evt, editor) => (editorRef.current = editor)}
                   initialValue={user?.desc || ""}
                   height={300}
                 /> */}
+                <MDInput
+                  {...register("desc", {
+                    value: user?.desc || "",
+                  })}
+                  multiline
+                  rows={4}
+                  type="text"
+                  label={t("lang.description")}
+                  fullWidth
+                  error={!!errors.first_name}
+                />
               </MDBox>
             </Grid>
             <Grid item xs={12}>

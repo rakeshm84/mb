@@ -88,6 +88,15 @@ export default createTheme({
         ...container,
       },
     },
+    MuiAlert: {
+      styleOverrides: {
+        root: {
+          fontSize: "0.875rem",
+          fontWeight: "500",
+          color: "#fff",
+        },
+      },
+    },
     MuiDrawer: { ...sidenav },
     MuiList: { ...list },
     MuiListItem: { ...listItem },

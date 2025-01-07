@@ -24,10 +24,10 @@
 import Dashboard from "layouts/dashboard";
 import Profile from "layouts/profile";
 import SignIn from "layouts/authentication/sign-in";
-// import SignUp from "layouts/authentication/sign-up";
-// import Persons from "layouts/persons";
-// import Person from "layouts/persons/form";
-// import Person_DT from "layouts/persons/datatable";
+import SignUp from "layouts/authentication/sign-up";
+import Persons from "layouts/persons";
+import Person from "layouts/persons/form";
+import Person_DT from "layouts/persons/datatable";
 
 // @mui icons
 import Icon from "@mui/material/Icon";

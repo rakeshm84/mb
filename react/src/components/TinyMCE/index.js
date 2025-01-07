@@ -48,7 +48,7 @@ TinyMCE.propTypes = {
 };
 
 TinyMCE.defaultProps = {
-  tinymceScriptSrc: process.env.PUBLIC_URL + "/tinymce/tinymce.min.js",
+  tinymceScriptSrc: process.env.REACT_APP_PUBLIC_URL + "/tinymce/tinymce.min.js",
   onInit: () => {},
   initialValue: "",
   height: 300,
