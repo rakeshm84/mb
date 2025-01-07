@@ -4,12 +4,10 @@ import PropTypes from "prop-types";
 import axios from "axios";
 import useAuth from "hooks/useAuth";
 
-const BASE_URL = "http://127.0.0.1:8000/api"; // Your Django backend URL
-
 const AuthMiddleware = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(null); // Track authentication status
   const location = useLocation();
-  const { user, saveUser } = useAuth();
+  const { user, saveUser, BASE_URL } = useAuth();
 
   // Helper functions to manage tokens
   const getAccessToken = () => localStorage.getItem("accessToken");

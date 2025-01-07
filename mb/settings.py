@@ -226,8 +226,6 @@ MASTER_DB = DATABASES['master']
 
 MASTER_DB_DSN = f"mysql://{MASTER_DB['USER']}:{MASTER_DB['PASSWORD']}@{MASTER_DB['HOST']}:{MASTER_DB['PORT']}/{MASTER_DB['NAME']}"
 
-# DATABASE_ROUTERS = ['admin_manager.routers.TenantRouter']
-
 SUPPORTED_LANGUAGES = ["en", "he"]
 
 APP_DOMAIN = "niyud.co.il"
