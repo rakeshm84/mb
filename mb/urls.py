@@ -22,20 +22,13 @@ Including another URLconf
 #     path('api-auth/', include('rest_framework.urls'))
 # ]
 
-from django.urls import path, include
-from django.contrib.auth.models import User
-from rest_framework import routers, serializers, viewsets
-# from admin_manager.views import CustomTokenObtainPairView
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
+from django.urls import path, include, re_path
+from django.views.generic import TemplateView
 
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
 urlpatterns = [
-    # path('', include(router.urls)),
-    # path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
-    # path('api/authentication/', CustomTokenObtainPairView.as_view(), name='custom_token_obtain_pair'),
-    # path('api/authentication/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    # path('api/authentication/verify/', TokenVerifyView.as_view(), name='token_verify'),
     path('api/', include('mb_core.urls')),
     path('api/', include('admin_manager.urls')),
+    re_path(r'^(?!api/|api-auth/).*$', TemplateView.as_view(template_name='build/index.html'), name='react'),
 ]
