@@ -1,10 +1,9 @@
 {
   "files": {
-    "main.js": "/static/js/main.de1abb9d.js",
+    "main.js": "/static/js/main.d9eed959.js",
     "static/js/38.91a0acd4.chunk.js": "/static/js/38.91a0acd4.chunk.js",
     "static/media/bg-sign-in-basic.jpeg": "/static/media/bg-sign-in-basic.f327db1d0e4b00ba3c81.jpeg",
     "static/media/bg-profile.jpeg": "/static/media/bg-profile.af1219a742e09fc7b612.jpeg",
-    "static/media/bg-sign-up-cover.jpeg": "/static/media/bg-sign-up-cover.30c5950b22e74f0d82ba.jpeg",
     "static/media/dummy-user.jpg": "/static/media/dummy-user.bfef5c6ce52ad41e7422.jpg",
     "static/media/team-1.jpg": "/static/media/team-1.0fd36e0ee93dcfacdef8.jpg",
     "static/media/marie.jpg": "/static/media/marie.c28f32663b6432b46f78.jpg",
@@ -20,10 +19,10 @@
     "static/media/logo-jira.svg": "/static/media/logo-jira.c19fd4e416babfbd0fdb0a794188c601.svg",
     "static/media/logo-atlassian.svg": "/static/media/logo-atlassian.f2b0e8570a4b4ce768854ff3dad1a6e1.svg",
     "index.html": "/index.html",
-    "main.de1abb9d.js.map": "/static/js/main.de1abb9d.js.map",
+    "main.d9eed959.js.map": "/static/js/main.d9eed959.js.map",
     "38.91a0acd4.chunk.js.map": "/static/js/38.91a0acd4.chunk.js.map"
   },
   "entrypoints": [
-    "static/js/main.de1abb9d.js"
+    "static/js/main.d9eed959.js"
   ]
 }
