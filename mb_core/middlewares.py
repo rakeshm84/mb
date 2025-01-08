@@ -23,7 +23,7 @@ class TenantMiddleware:
         tenant = None
 
         # Check if the host is in the format of subdomain.domain.com
-        if len(parts) > 2:  # Subdomain exists
+        if len(parts) > 3:  # Subdomain exists
             subdomain = parts[0]  # Extract subdomain (e.g., "john" in "john.mb.com")
             tenant = Tenant.objects.filter(slug=subdomain).first()
         else:
