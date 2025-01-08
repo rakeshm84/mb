@@ -364,3 +364,12 @@ class PersonsDTView(BaseDatatableView):
             }
             for tenant in qs
         ]
+
+class PloiApi(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        from mb_core.ploi_api import PloiAPI
+        ploi = PloiAPI()
+        servers = ploi.get_servers()
+        return JsonResponse(servers, safe=False)
