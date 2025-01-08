@@ -112,4 +112,4 @@ class Test2View(APIView):
                 row = cursor.fetchall()
                 return JsonResponse(list(row), safe=False)
             except ProgrammingError as e:
-                return JsonResponse({'error': e}, safe=False)
+                return Response({"error": e}, status=status.HTTP_404_NOT_FOUND)
