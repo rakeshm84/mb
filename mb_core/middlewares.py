@@ -1,11 +1,14 @@
 from django.conf import settings
 from .models import Tenant
 from .util import make_db_connection
+import logging
 
 class TenantMiddleware:
     """
     Middleware to set the current tenant based on the request's subdomain or domain.
     """
+
+    logging.basicConfig(filename='t_middleware.log', level=logging.DEBUG)
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -21,7 +24,10 @@ class TenantMiddleware:
         parts = host_without_port.split('.')
 
         tenant = None
-
+        logging.debug("domain parts")
+        logging.debug(parts)
+        logging.debug('parts length')
+        logging.debug(len(parts))
         # Check if the host is in the format of subdomain.domain.com
         if len(parts) > 3:  # Subdomain exists
             subdomain = parts[0]  # Extract subdomain (e.g., "john" in "john.mb.com")
@@ -33,6 +39,8 @@ class TenantMiddleware:
             domain = host_without_port  # Extract domain (e.g., "john" in "john.com")
             tenant = Tenant.objects.filter(domain=domain).first()
 
+        logging.debug("tenant")
+        logging.debug(tenant)
         if tenant:
             make_db_connection(tenant.dsn)
             request.session['tenant_type'] = tenant.entity
