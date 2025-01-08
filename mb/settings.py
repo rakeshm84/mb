@@ -47,9 +47,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'mb_core.middlewares.TenantMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'mb_core.middlewares.TenantMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -226,7 +226,7 @@ MASTER_DB_NAME = "mb"
 
 MASTER_DB = DATABASES['master']
 
-MASTER_DB_DSN = f"mysql://{MASTER_DB['USER']}:{MASTER_DB['PASSWORD']}@{MASTER_DB['HOST']}:{MASTER_DB['PORT']}/{MASTER_DB['NAME']}"
+MASTER_DB_DSN = f"{MASTER_DB['ENGINE']}://{MASTER_DB['USER']}:{MASTER_DB['PASSWORD']}@{MASTER_DB['HOST']}:{MASTER_DB['PORT']}/{MASTER_DB['NAME']}"
 
 SUPPORTED_LANGUAGES = ["en", "he"]
 

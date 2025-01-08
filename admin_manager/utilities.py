@@ -21,10 +21,11 @@ def create_tenant_database(tenant_dbname):
             try:
                 cursor.execute(f"CREATE DATABASE {tenant_dbname};")
                 print(f"Database {tenant_dbname} created.")
+                return tenant_dbname
             except:
                 print(f"Database {tenant_dbname} already exists.")
-        
-        return tenant_dbname 
+                return None
+         
     except ProgrammingError as e:
         print(f"Error creating database {tenant_dbname}: {e}")
         return None
