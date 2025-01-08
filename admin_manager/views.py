@@ -11,6 +11,7 @@ from django.conf import settings
 from django.db.models import Q
 from django.http import JsonResponse
 from django.db.models import OuterRef, Subquery, Value, Func, F, JSONField
+from mb_core.util import parse_connection_string
 
 class CreateUserView(APIView):
     permission_classes = [IsAuthenticated]
@@ -22,7 +23,17 @@ class CreateUserView(APIView):
             user = serializer.save()
             if user:
                 db_name = settings.MASTER_DB_NAME + '_human_tenant_' + str(user.username)
-                dsn = _dsn_to_string({'dbname': db_name})
+                master_db_dsn_string = settings.MASTER_DB_DSN
+                master_db_dsn = parse_connection_string(master_db_dsn_string)
+                tenant_db_dsn = {
+                    "driver": master_db_dsn['ENGINE'],
+                    "host": master_db_dsn['HOST'],
+                    "dbname": db_name,
+                    "user": master_db_dsn['USER'],
+                    "password": master_db_dsn['PASSWORD'],
+                    "port": master_db_dsn['PORT'],
+                }
+                dsn = _dsn_to_string(tenant_db_dsn)
                 tenant_data = {
                     'entity': 'human',
                     'entity_id': user.pk,
