@@ -47,7 +47,7 @@ class PloiAPI:
         return response.json()
     
     def get_databases(self, server_id):
-        """ Fetch all databases of a server """
+        """ List all the databases available in the server """
         url = f"{self.base_url}/servers/{server_id}/databases"
         response = requests.get(url, headers=self.headers)
         response.raise_for_status()
