@@ -19,6 +19,7 @@ import useConstants from "constants";
 import Loader from "components/loader";
 import AlertMessage from "components/UI/AlertMessage";
 import useAlert from "hooks/useAlert";
+import useAuth from "hooks/useAuth";
 
 const PersonsDT = () => {
   const { errorState, showAlert } = useAlert();
@@ -30,6 +31,7 @@ const PersonsDT = () => {
   const [perPage, setPerPage] = useState(per_page);
   const [search, setSearch] = useState("");
   const { api } = useAPI();
+  const { user } = useAuth();
 
   const fetchData = async (page, perPage, search, sortColumn = "", sortDirection = "asc") => {
     setLoading(true);
@@ -128,11 +130,13 @@ const PersonsDT = () => {
                 <MDTypography variant="h6" color="white">
                   {t("lang.persons")}
                 </MDTypography>
-                <Link to="/person">
-                  <MDButton variant="outlined" color="white" size="small">
-                    {t("lang.actions.add_new")}
-                  </MDButton>
-                </Link>
+                {!user.is_human_tenant && (
+                  <Link to="/person">
+                    <MDButton variant="outlined" color="white" size="small">
+                      {t("lang.actions.add_new")}
+                    </MDButton>
+                  </Link>
+                )}
               </MDBox>
               <MDBox p={3}>
                 <MDBox width="12rem" ml="auto">

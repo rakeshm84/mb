@@ -1,7 +1,6 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework import status
 from django.contrib.auth.models import User
 from .serializers import UserSerializer, TenantSerializer, UserProfileSerializer
@@ -9,8 +8,6 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from .utilities import create_tenant_db, _dsn_to_string
 from mb_core.models import UserProfile, Tenant
 from django.conf import settings
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from django.contrib.auth import authenticate
 from django.db.models import Q
 from django.http import JsonResponse
 from django.db.models import OuterRef, Subquery, Value, Func, F, JSONField
@@ -24,7 +21,7 @@ class CreateUserView(APIView):
         if serializer.is_valid():
             user = serializer.save()
             if user:
-                db_name = settings.MASTER_DB_NAME + '_tenant_person_' + str(user.username)
+                db_name = settings.MASTER_DB_NAME + '_human_tenant_' + str(user.username)
                 dsn = _dsn_to_string({'dbname': db_name})
                 tenant_data = {
                     'entity': 'human',
@@ -168,12 +165,15 @@ class TenantEditView(APIView):
 
             serializer = UserSerializer(user)
 
+            is_human_tenant = request.session.get('is_human_tenant', False)
+
             userData = {
                 'id': user.id,
                 'username': user.username,
                 'email': user.email,
                 'first_name': user.first_name,
                 'last_name': user.last_name,
+                'is_human_tenant': is_human_tenant,
             }
 
             # Check if the 'profile' related object exists

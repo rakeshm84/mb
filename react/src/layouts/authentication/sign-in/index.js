@@ -27,6 +27,8 @@ import BasicLayout from "layouts/authentication/components/BasicLayout";
 import bgImage from "assets/images/bg-sign-in-basic.jpeg";
 
 import useAuth from "hooks/useAuth";
+import AlertMessage from "components/UI/AlertMessage";
+import useAlert from "hooks/useAlert";
 
 function Basic() {
   const [username, setUsername] = useState("");
@@ -37,6 +39,7 @@ function Basic() {
   const location = useLocation();
 
   const [rememberMe, setRememberMe] = useState(false);
+  const { errorState, showAlert } = useAlert();
 
   const handleSetRememberMe = () => setRememberMe(!rememberMe);
   const handleSubmit = async (e) => {
@@ -50,6 +53,8 @@ function Basic() {
         navigate(redirectTo);
       }
     } catch (error) {
+      const data = error.response.data;
+      showAlert("error", data.detail);
       console.error("An error occurred:", error);
     }
   };
@@ -142,6 +147,7 @@ function Basic() {
           </MDBox>
         </MDBox>
       </Card>
+      <AlertMessage {...errorState} />
     </BasicLayout>
   );
 }

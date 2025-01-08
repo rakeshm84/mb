@@ -34,6 +34,7 @@ class AuthenticationView(TokenObtainPairView):
                 user = User.objects.select_related('profile').filter(username=username).first()
 
             if user:
+                is_human_tenant = request.session.get('is_human_tenant', False)
                 # Add user data to the response
                 response.data['user'] = {
                     'id': user.id,
@@ -41,6 +42,7 @@ class AuthenticationView(TokenObtainPairView):
                     'email': user.email,
                     'first_name': user.first_name,
                     'last_name': user.last_name,
+                    'is_human_tenant': is_human_tenant,
                 }
 
                 # Check if the 'profile' related object exists

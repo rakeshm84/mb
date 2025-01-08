@@ -35,7 +35,10 @@ class TenantMiddleware:
 
         if tenant:
             make_db_connection(tenant.dsn)
+            request.session['tenant_type'] = tenant.entity
+            request.session['is_human_tenant'] = tenant.entity == 'human'
         else:
-            pass
+            request.session['tenant_type'] = None
+            request.session['is_human_tenant'] = False
 
         return self.get_response(request)

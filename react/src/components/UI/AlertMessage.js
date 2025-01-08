@@ -45,7 +45,7 @@ AlertMessage.propTypes = {
   type: PropTypes.oneOf(["success", "info", "warning", "error"]).isRequired, // Alert type
   show: PropTypes.bool.isRequired, // Whether the alert should be shown
   message: PropTypes.string.isRequired, // The message to be displayed in the alert
-  id: PropTypes.number.isRequired,
+  id: PropTypes.number,
 };
 
 export default AlertMessage;

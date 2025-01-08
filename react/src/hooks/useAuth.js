@@ -54,6 +54,7 @@ const useAuth = () => {
   const logout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
+    sessionStorage.removeItem("user");
     switchLanguage("en");
   };
 

@@ -6,7 +6,7 @@ import PropTypes from "prop-types";
 
 const BreadCrumbs = ({ pagesList, mb = 2 }) => {
   return (
-    <MDTypography aria-label="breadcrumb" mx={2} mb={mb} fontWeight={600}>
+    <MDTypography aria-label="breadcrumb" mx={2} mb={mb} fontWeight="regular">
       {pagesList.map((page, index) => (
         <Fragment key={index}>
           {page.link != "" ? (
