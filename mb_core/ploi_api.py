@@ -8,6 +8,7 @@ class PloiAPI:
         self.api_token = api_token or settings.PLOI_API_TOKEN
         self.headers = {
             "Authorization": f"Bearer {self.api_token}",
+            "Content-Type": "application/json",
             "Accept": "application/json",
         }
 
@@ -42,5 +43,12 @@ class PloiAPI:
         """Delete a server by ID."""
         url = f"{self.base_url}/servers/{server_id}"
         response = requests.delete(url, headers=self.headers)
+        response.raise_for_status()
+        return response.json()
+    
+    def get_databases(self, server_id):
+        """ Fetch all databases of a server """
+        url = f"{self.base_url}/servers/{server_id}/databases"
+        response = requests.get(url, headers=self.headers)
         response.raise_for_status()
         return response.json()

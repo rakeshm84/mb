@@ -371,5 +371,5 @@ class PloiApi(APIView):
     def get(self, request):
         from mb_core.ploi_api import PloiAPI
         ploi = PloiAPI()
-        servers = ploi.get_servers()
+        servers = ploi.get_databases(84876)
         return JsonResponse(servers, safe=False)
