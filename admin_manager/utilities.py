@@ -51,6 +51,8 @@ def create_tenant_db(tenant_id):
     source_database = settings.MASTER_DB_NAME
     table_names = list_all_tables(source_database)
     tenant_db_name = _get_db_name(tenant_id)
+
+    return tenant_db_name;
     
     target_database = create_tenant_database(tenant_db_name)
     
