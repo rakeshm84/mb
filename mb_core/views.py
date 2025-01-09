@@ -112,7 +112,7 @@ class Test2View(APIView):
                 row = cursor.fetchall()
                 return JsonResponse(list(row), safe=False)
             except ProgrammingError as e:
-                return Response({"error": e}, status=status.HTTP_404_NOT_FOUND)
+                return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
             
 
 from django.views.decorators.csrf import csrf_exempt
