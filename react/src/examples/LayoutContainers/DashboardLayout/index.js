@@ -21,7 +21,7 @@ function DashboardLayout({ children }) {
   const { user } = useAuth();
 
   useEffect(() => {
-    setLayout(dispatch, user.is_human_tenant ? "human" : "dashboard");
+    setLayout(dispatch, user?.is_human_tenant ? "human" : "dashboard");
   }, [pathname]);
 
   return (
