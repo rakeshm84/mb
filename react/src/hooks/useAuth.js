@@ -1,10 +1,13 @@
 import axios from "axios";
 import useLanguageSwitcher from "hooks/useLanguageSwitcher";
 import useConstants from "constants";
+import { useMaterialUIController } from "context";
 
 const useAuth = () => {
   const { switchLanguage } = useLanguageSwitcher();
   const { API_URL } = useConstants();
+  const [controller, dispatch] = useMaterialUIController();
+  const { setContextRenderCount } = controller;
 
   const BASE_URL = API_URL; // Your Django backend URL
   // const BASE_URL = "http://127.0.0.1:8000/api"; // Your Django backend URL
@@ -58,6 +61,7 @@ const useAuth = () => {
     localStorage.removeItem("refreshToken");
     sessionStorage.removeItem("user");
     switchLanguage("en");
+    setContextRenderCount(0);
   };
 
   return {

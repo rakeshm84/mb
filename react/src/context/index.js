@@ -3,7 +3,7 @@
   you can customize the states for the different components here.
 */
 
-import { createContext, useContext, useReducer, useMemo } from "react";
+import { createContext, useContext, useReducer, useMemo, useEffect, useState } from "react";
 
 // prop-types is a library for typechecking of props
 import PropTypes from "prop-types";
@@ -47,6 +47,13 @@ function reducer(state, action) {
     case "DARKMODE": {
       return { ...state, darkMode: action.value };
     }
+    case "SET_USER":
+      return {
+        ...state,
+        whiteSidenav: action.payload?.is_human_tenant || false,
+        sidenavColor: action.payload?.is_human_tenant ? "dark" : "info",
+        layout: action.payload?.is_human_tenant ? "human" : "dashboard",
+      };
     default: {
       throw new Error(`Unhandled action type: ${action.type}`);
     }
@@ -55,6 +62,7 @@ function reducer(state, action) {
 
 // Material Dashboard 2 React context provider
 function MaterialUIControllerProvider({ children }) {
+  const [userSetCount, setUserSetCount] = useState(0);
   const user =
     sessionStorage.getItem("user") !== "undefined" && sessionStorage.getItem("user") !== "null"
       ? JSON.parse(sessionStorage.getItem("user"))
@@ -71,9 +79,20 @@ function MaterialUIControllerProvider({ children }) {
     direction: localStorage.getItem("direction") || "ltr",
     layout: user?.is_human_tenant ? "human" : "dashboard",
     darkMode: false,
+    setContextRenderCount: setUserSetCount,
   };
 
   const [controller, dispatch] = useReducer(reducer, initialState);
+
+  useEffect(() => {
+    if (user?.is_human_tenant !== undefined && userSetCount < 5) {
+      dispatch({
+        type: "SET_USER",
+        payload: user,
+      });
+      setUserSetCount(userSetCount + 1);
+    }
+  }, [user, userSetCount]);
 
   const value = useMemo(() => [controller, dispatch], [controller, dispatch]);
 
