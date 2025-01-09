@@ -1,14 +1,16 @@
 // constants.js
 
 const getApiUrl = () => {
+  const protocol = window.location.protocol;
   const hostname = window.location.hostname;
+  const domain = `${protocol}//${hostname}`;
 
   if (hostname === "localhost") {
     // Development environment
     return "http://127.0.0.1:8000/api";
   } else {
     // Production environment
-    return hostname + "/api";
+    return domain + "/api";
   }
 };
 
