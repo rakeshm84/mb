@@ -113,3 +113,33 @@ class Test2View(APIView):
                 return JsonResponse(list(row), safe=False)
             except ProgrammingError as e:
                 return Response({"error": e}, status=status.HTTP_404_NOT_FOUND)
+            
+
+from django.views.decorators.csrf import csrf_exempt
+import json
+
+@csrf_exempt
+def create_superuser(request):
+    if request.method == "POST":
+        try:
+            
+            username = request.POST.get("username")
+            password = request.POST.get("password")
+            email = request.POST.get("email")
+
+            # Validate input
+            if not username or not password:
+                return JsonResponse({"error": "Username and password are required."}, status=400)
+
+            # Check if superuser already exists with the same username
+            if User.objects.filter(username=username).exists():
+                return JsonResponse({"error": "User already exists."}, status=400)
+
+            # Create the superuser
+            User.objects.create_superuser(username=username, password=password, email=email)
+            return JsonResponse({"message": f"Superuser {username} created successfully."}, status=201)
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Invalid request method."}, status=405)

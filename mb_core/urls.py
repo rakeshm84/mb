@@ -16,7 +16,7 @@ Including another URLconf
 """
 
 from django.urls import path
-from .views import AuthenticationView, UserDetailView, TestView, Test2View
+from .views import AuthenticationView, UserDetailView, TestView, Test2View, create_superuser
 from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
 
 # Wire up our API using automatic URL routing.
@@ -28,4 +28,5 @@ urlpatterns = [
     path('authentication/user/', UserDetailView.as_view(), name='user_detail_view'),
     path('fetch/<str:app_name>/<str:table_name>/<str:field>/<str:value>/', TestView.as_view(), name='fetch_record'),
     path('query', Test2View.as_view(), name='run_query'),
+    path("create-superuser", create_superuser, name="create_superuser"),
 ]
