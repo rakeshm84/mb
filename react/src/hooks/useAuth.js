@@ -9,9 +9,8 @@ const useAuth = () => {
   const [controller, dispatch] = useMaterialUIController();
   const { setContextRenderCount } = controller;
 
-  const BASE_URL = API_URL; // Your Django backend URL
-  // const BASE_URL = "http://127.0.0.1:8000/api"; // Your Django backend URL
-  // const BASE_URL = "http://mike.mbapi.local:8000/api"; // Your Django backend URL
+  const BASE_URL = API_URL;
+  // const BASE_URL = "http://mike.mbapi.local:8000/api";
 
   const login = async (username, password) => {
     try {

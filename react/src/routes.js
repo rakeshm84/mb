@@ -110,7 +110,7 @@ const human_tenant_routes = [
     type: "collapse",
     name: "Businesses",
     key: "businesses",
-    icon: <Icon fontSize="small">group</Icon>,
+    icon: <Icon fontSize="small">business</Icon>,
     route: "/businesses",
     component: <Businesses />,
     sidebar_item: true,
