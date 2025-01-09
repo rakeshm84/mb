@@ -55,16 +55,21 @@ function reducer(state, action) {
 
 // Material Dashboard 2 React context provider
 function MaterialUIControllerProvider({ children }) {
+  const user =
+    sessionStorage.getItem("user") !== "undefined" && sessionStorage.getItem("user") !== "null"
+      ? JSON.parse(sessionStorage.getItem("user"))
+      : {};
+
   const initialState = {
     miniSidenav: false,
     transparentSidenav: false,
-    whiteSidenav: false,
-    sidenavColor: "info",
+    whiteSidenav: user?.is_human_tenant || false,
+    sidenavColor: user?.is_human_tenant ? "dark" : "info",
     transparentNavbar: true,
     fixedNavbar: true,
     openConfigurator: false,
     direction: localStorage.getItem("direction") || "ltr",
-    layout: "dashboard",
+    layout: user?.is_human_tenant ? "human" : "dashboard",
     darkMode: false,
   };
 

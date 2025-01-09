@@ -29,7 +29,7 @@ import { CacheProvider } from "@emotion/react";
 import createCache from "@emotion/cache";
 
 // Material Dashboard 2 React routes
-import routes from "routes";
+import { routes, admin_routes, human_tenant_routes } from "routes";
 
 // Material Dashboard 2 React contexts
 import { useMaterialUIController, setMiniSidenav, setOpenConfigurator } from "context";
@@ -40,8 +40,10 @@ import brandDark from "assets/images/logo-ct-dark.png";
 
 import AuthMiddleware from "middlewares/AuthMiddleware";
 import NoAuthMiddleware from "middlewares/NoAuthMiddleware";
+import useAuth from "hooks/useAuth";
 
 export default function App() {
+  const { user } = useAuth();
   const [controller, dispatch] = useMaterialUIController();
   const {
     miniSidenav,
@@ -154,6 +156,10 @@ export default function App() {
     </MDBox>
   );
 
+  const all_routes = user?.is_human_tenant
+    ? [...routes, ...human_tenant_routes]
+    : [...routes, ...admin_routes];
+
   return direction === "rtl" ? (
     <CacheProvider value={rtlCache}>
       <ThemeProvider theme={darkMode ? themeDarkRTL : themeRTL}>
@@ -164,7 +170,7 @@ export default function App() {
               color={sidenavColor}
               brand={(transparentSidenav && !darkMode) || whiteSidenav ? brandDark : brandWhite}
               brandName="MB"
-              routes={routes}
+              routes={all_routes}
               onMouseEnter={handleOnMouseEnter}
               onMouseLeave={handleOnMouseLeave}
             />
@@ -172,9 +178,24 @@ export default function App() {
             {configsButton}
           </>
         )}
+        {layout === "human" && (
+          <>
+            <Sidenav
+              color={sidenavColor}
+              brand={(transparentSidenav && !darkMode) || whiteSidenav ? brandDark : brandWhite}
+              brandName="MB HUMAN"
+              routes={all_routes}
+              onMouseEnter={handleOnMouseEnter}
+              onMouseLeave={handleOnMouseLeave}
+            />
+          </>
+        )}
         {layout === "vr" && <Configurator />}
         <Routes>
-          {getRoutes(routes)}
+          {user?.is_human_tenant
+            ? getRoutes([...routes, ...human_tenant_routes])
+            : getRoutes([...routes, ...admin_routes])}
+          {/* {getRoutes(routes)} */}
           <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
       </ThemeProvider>
@@ -188,7 +209,7 @@ export default function App() {
             color={sidenavColor}
             brand={(transparentSidenav && !darkMode) || whiteSidenav ? brandDark : brandWhite}
             brandName="MB"
-            routes={routes}
+            routes={all_routes}
             onMouseEnter={handleOnMouseEnter}
             onMouseLeave={handleOnMouseLeave}
           />
@@ -196,9 +217,24 @@ export default function App() {
           {configsButton}
         </>
       )}
+      {layout === "human" && (
+        <>
+          <Sidenav
+            color={sidenavColor}
+            brand={(transparentSidenav && !darkMode) || whiteSidenav ? brandDark : brandWhite}
+            brandName="MB HUMAN"
+            routes={all_routes}
+            onMouseEnter={handleOnMouseEnter}
+            onMouseLeave={handleOnMouseLeave}
+          />
+        </>
+      )}
       {layout === "vr" && <Configurator />}
       <Routes>
-        {getRoutes(routes)}
+        {user?.is_human_tenant
+          ? getRoutes([...routes, ...human_tenant_routes])
+          : getRoutes([...routes, ...admin_routes])}
+        {/* {getRoutes(routes)} */}
         <Route path="*" element={<Navigate to="/dashboard" />} />
       </Routes>
     </ThemeProvider>

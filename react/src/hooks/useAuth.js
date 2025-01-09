@@ -1,12 +1,14 @@
 import axios from "axios";
 import useLanguageSwitcher from "hooks/useLanguageSwitcher";
+import useConstants from "constants";
 
 const useAuth = () => {
   const { switchLanguage } = useLanguageSwitcher();
+  const { API_URL } = useConstants();
 
-  const BASE_URL = process.env.REACT_APP_API_URL; // Your Django backend URL
+  const BASE_URL = API_URL; // Your Django backend URL
   // const BASE_URL = "http://127.0.0.1:8000/api"; // Your Django backend URL
-  // const BASE_URL = "http://john.mbapi.local:8000/api"; // Your Django backend URL
+  // const BASE_URL = "http://mike.mbapi.local:8000/api"; // Your Django backend URL
 
   const login = async (username, password) => {
     try {

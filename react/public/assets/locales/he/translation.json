@@ -81,6 +81,7 @@
     "phone_number": "טֵלֵפוֹן",
     "address": "כְּתוֹבֶת",
     "date_of_birth": "תַאֲרִיך לֵידָה",
-    "description": "תֵאוּר"
+    "description": "תֵאוּר",
+    "businesses": "עסקים"
   }
 }

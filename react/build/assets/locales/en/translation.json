@@ -84,6 +84,7 @@
     "phone_number": "Phone",
     "address": "Address",
     "date_of_birth": "Date of Birth",
-    "description": "Description"
+    "description": "Description",
+    "businesses": "Businesses"
   }
 }

@@ -1,33 +1,12 @@
-// @mui material components
-import Grid from "@mui/material/Grid";
-
-// Material Dashboard 2 React components
-import MDBox from "components/MDBox";
-
-// Material Dashboard 2 React example components
-import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import DashboardNavbar from "examples/Navbars/DashboardNavbar";
-import Footer from "examples/Footer";
-import ReportsBarChart from "examples/Charts/BarCharts/ReportsBarChart";
-import ReportsLineChart from "examples/Charts/LineCharts/ReportsLineChart";
-import ComplexStatisticsCard from "examples/Cards/StatisticsCards/ComplexStatisticsCard";
-
-// Data
-import reportsBarChartData from "layouts/dashboard/data/reportsBarChartData";
 import reportsLineChartData from "layouts/dashboard/data/reportsLineChartData";
-
-// Dashboard components
-import Projects from "layouts/dashboard/components/Projects";
-import OrdersOverview from "layouts/dashboard/components/OrdersOverview";
+import HumanDashboard from "includes/human/dashboard";
+import AdminDashboard from "includes/admin/dashboard";
+import useAuth from "hooks/useAuth";
 
 function Dashboard() {
-  const { sales, tasks } = reportsLineChartData;
+  const { user } = useAuth();
 
-  return (
-    <DashboardLayout>
-      <DashboardNavbar />
-    </DashboardLayout>
-  );
+  return <>{user?.is_human_tenant ? <HumanDashboard /> : <AdminDashboard />}</>;
 }
 
 export default Dashboard;

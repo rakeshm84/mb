@@ -28,6 +28,7 @@ import SignUp from "layouts/authentication/sign-up";
 import Persons from "layouts/persons";
 import Person from "layouts/persons/form";
 import Person_DT from "layouts/persons/datatable";
+import Businesses from "includes/human/businesses";
 
 // @mui icons
 import Icon from "@mui/material/Icon";
@@ -42,16 +43,6 @@ const routes = [
     component: <Dashboard />,
     sidebar_item: true,
     lang_attr: "dashboard",
-  },
-  {
-    type: "collapse",
-    name: "Persons",
-    key: "persons",
-    icon: <Icon fontSize="small">group</Icon>,
-    route: "/persons",
-    component: <Person_DT />,
-    sidebar_item: true,
-    lang_attr: "persons",
   },
   {
     type: "collapse",
@@ -81,6 +72,19 @@ const routes = [
     component: <SignUp />,
     lang_attr: "sign_up",
   },
+];
+
+const admin_routes = [
+  {
+    type: "collapse",
+    name: "Persons",
+    key: "persons",
+    icon: <Icon fontSize="small">group</Icon>,
+    route: "/persons",
+    component: <Person_DT />,
+    sidebar_item: true,
+    lang_attr: "persons",
+  },
   {
     type: "collapse",
     name: "Person",
@@ -101,4 +105,21 @@ const routes = [
   },
 ];
 
-export default routes;
+const human_tenant_routes = [
+  {
+    type: "collapse",
+    name: "Businesses",
+    key: "businesses",
+    icon: <Icon fontSize="small">group</Icon>,
+    route: "/businesses",
+    component: <Businesses />,
+    sidebar_item: true,
+    lang_attr: "businesses",
+  },
+];
+
+// const all_routes = [...routes, ...admin_routes, ...human_tenant_routes];
+
+// export default all_routes;
+
+export { routes, admin_routes, human_tenant_routes };

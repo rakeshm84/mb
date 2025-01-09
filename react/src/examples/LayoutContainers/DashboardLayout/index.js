@@ -12,13 +12,16 @@ import MDBox from "components/MDBox";
 // Material Dashboard 2 React context
 import { useMaterialUIController, setLayout } from "context";
 
+import useAuth from "hooks/useAuth";
+
 function DashboardLayout({ children }) {
   const [controller, dispatch] = useMaterialUIController();
   const { miniSidenav } = controller;
   const { pathname } = useLocation();
+  const { user } = useAuth();
 
   useEffect(() => {
-    setLayout(dispatch, "dashboard");
+    setLayout(dispatch, user.is_human_tenant ? "human" : "dashboard");
   }, [pathname]);
 
   return (

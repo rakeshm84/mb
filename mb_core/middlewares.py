@@ -9,9 +9,9 @@ class TenantMiddleware:
 
     def __init__(self, get_response):
         self.get_response = get_response
-        make_db_connection(settings.MASTER_DB_DSN)
 
     def __call__(self, request):
+        make_db_connection(settings.MASTER_DB_DSN)
         host = request.get_host()
         host_without_port = host.split(':')[0]  # Remove port if present
 
@@ -26,7 +26,7 @@ class TenantMiddleware:
         # Check if the host is in the format of subdomain.domain.com
         if len(parts) > 3:  # Subdomain exists
             subdomain = parts[0]  # Extract subdomain (e.g., "john" in "john.mb.com")
-            tenant = Tenant.objects.filter(slug=subdomain).first()
+            tenant = Tenant.objects.filter(slug=subdomain).using('master').first()
         else:
             # Skip tenant query and connection switch if the domain matches APP_DOMAIN
             if host_without_port == settings.APP_DOMAIN:
