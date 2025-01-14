@@ -24,11 +24,23 @@ Including another URLconf
 
 from django.urls import path, include, re_path
 from django.views.generic import TemplateView
+from django.conf import settings
 
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
 urlpatterns = [
-    path('api/', include('mb_core.urls')),
-    path('api/', include('admin_manager.urls')),
+    # path('api/', include('mb_core.urls')),
+    # path('api/', include('admin_manager.urls')),
     re_path(r'^(?!api/|api-auth/).*$', TemplateView.as_view(template_name='build/index.html'), name='react'),
 ]
+
+
+# Conditionally include app URLs 
+if 'ULM' in settings.ENABLE_SERVICES:
+    urlpatterns += [path('api/', include('ULM.urls'))]
+
+if 'AAM' in settings.ENABLE_SERVICES:
+    urlpatterns += [path('api/', include('AAM.urls'))]
+
+if 'HumanEEM' in settings.ENABLE_SERVICES:
+    urlpatterns += [path('api/', include('HumanEEM.urls'))]    
