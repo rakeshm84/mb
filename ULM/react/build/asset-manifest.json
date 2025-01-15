@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.js": "/static/js/main.77a1d9fb.js",
+    "main.js": "/static/js/main.512c8849.js",
     "static/js/38.91a0acd4.chunk.js": "/static/js/38.91a0acd4.chunk.js",
     "static/media/bg-sign-in-basic.jpeg": "/static/media/bg-sign-in-basic.f327db1d0e4b00ba3c81.jpeg",
     "index.html": "/index.html",
-    "main.77a1d9fb.js.map": "/static/js/main.77a1d9fb.js.map",
+    "main.512c8849.js.map": "/static/js/main.512c8849.js.map",
     "38.91a0acd4.chunk.js.map": "/static/js/38.91a0acd4.chunk.js.map"
   },
   "entrypoints": [
-    "static/js/main.77a1d9fb.js"
+    "static/js/main.512c8849.js"
   ]
 }
