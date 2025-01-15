@@ -88,6 +88,7 @@ class TestView(APIView):
         return Response({"message": "Render from the ULM service"}, status=status.HTTP_201_CREATED)
 # Create your views here.
 class SetAuthentication(APIView):
+    permission_classes = [AllowAny]
 
     def post(self, request):
        
