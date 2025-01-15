@@ -9,6 +9,7 @@ from rest_framework import status
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
+
 class AuthenticationView(TokenObtainPairView):
     serializer_class = TokenObtainPairSerializer
 
@@ -86,6 +87,45 @@ class TestView(APIView):
         # serializer = UserSerializer(data=request.data)
         return Response({"message": "Render from the ULM service"}, status=status.HTTP_201_CREATED)
 # Create your views here.
+class SetAuthentication(APIView):
+
+    def post(self, request):
+       
+        access_token = request.data.get('access_token')
+        refresh_token = request.data.get('refresh_token')
+
+        if not access_token or not refresh_token:
+            return JsonResponse({"error": "Tokens are required!"}, status=400)
+        response = JsonResponse({"message": "Cookies set successfully!"})
+        response.set_cookie(
+            'auth_token', access_token,
+            max_age=3600,                        
+            httponly=True,                     
+            secure=False,                      
+            samesite='Lax'
+        )
+        response.set_cookie(
+            'refresh_token', refresh_token,
+            max_age=86400,
+            httponly=True,                     
+            secure=False,                      
+            samesite='Lax'
+        )
+        
+        return response
+
+
+    def get(self, request):        
+        auth_cookie = request.COOKIES.get('auth_token')
+        refresh_cookie = request.COOKIES.get('refresh_token')
+
+        if auth_cookie and refresh_cookie:
+            return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie,"message": "Cookies set successfully!"})
+
+            return True
+        else:
+            return JsonResponse({"error": "Cookies not found!"}, status=400)
+
 
 @csrf_exempt
 def create_superuser(request):
