@@ -1,0 +1,87 @@
+{
+  "lang": {
+    "sign_in": "התחברות",
+    "user_name": "שם משתמש",
+    "password": "סיסמה",
+    "confirm_password": "אישור סיסמה",
+    "remember_me": "זכור אותי",
+    "Dont_have_an_account": "אין לך חשבון?",
+    "sign_up": "הירשם",
+    "dashboard": "לוח מחוונים",
+    "tenants": "יישויות",
+    "tenant": "ישות",
+    "profile": "פרופיל",
+    "user": {
+      "first_name": "שם פרטי",
+      "last_name": "שם משפחה",
+      "email": "דוא\"ל"
+    },
+    "database": {
+      "db_name": "שם מסד נתונים"
+    },
+    "actions": {
+      "logout": "התנתקות",
+      "add_new": "הוסף חדש",
+      "submit": "שלח",
+      "add_new_tenant": "הוסף שוכר חדש"
+    },
+    "logout": "התנתקות",
+    "table": "טבלה",
+    "material_ui_config": {
+      "title": "מתקן קביעת תצורת Material UI",
+      "description": "ראה את אפשרויות הלוח שלנו.",
+      "sidenav": {
+        "title": "צבעים של סרגל צד",
+        "types": "בחר בין סוגים שונים של סרגל צד.",
+        "colors": {
+          "dark": "כהה",
+          "light": "בהיר",
+          "transparent": "שקוף"
+        }
+      },
+      "navbar": {
+        "fixed": "סרגל ניווט קבוע"
+      },
+      "mode": "בהיר / כהה"
+    },
+    "validations": { 
+      "first_name_required": "שם פרטי נדרש",
+      "first_name_not_valid": "רק אותיות מותרות",
+      "last_name_required": "שם משפחה נדרש",
+      "last_name_not_valid": "רק אותיות מותרות",
+      "username": {
+        "required": "שם משתמש נדרש",
+        "not_unique": "שם משתמש זה כבר בשימוש. אנא בחר שם אחר."
+      },
+      "email": {
+        "required": "דוא\"ל נדרש",
+        "invalid": "אנא הזן כתובת דוא\"ל חוקית",
+        "not_unique": "דואר אלקטרוני זה כבר בשימוש. אנא בחר כתובת אחרת."
+      },
+      "password": {
+        "required": "סיסמה נדרשת",
+        "min_length": "הסיסמה חייבת להיות באורך מינימום של 8 תווים",
+        "max_length": "הסיסמה חייבת להיות באורך מרבי של 20 תווים",
+        "contains_uppercase": "הסיסמה חייבת לכלול לפחות אות אחת רישית",
+        "contains_lowercase": "הסיסמה חייבת לכלול לפחות אות אחת קטנה",
+        "contains_digit": "הסיסמה חייבת לכלול לפחות ספרה אחת",
+        "contains_special_char": "הסיסמה חייבת לכלול לפחות סימן מיוחד אחד"
+      },
+      "confirm_password": {
+        "required": "אישור סיסמה נדרש",
+        "mismatch": "הסיסמאות אינן תואמות"
+      },
+      "db_name_required": "שם מסד נתונים נדרש",
+      "username_required": "שדה שם משתמש לא יכול להיות ריק"
+    },
+    "persons": "אנשים",
+    "person": "אָדָם",
+    "add_new_person": "הוסף אדם חדש",
+    "edit_person": "ערוך אדם",
+    "phone_number": "טֵלֵפוֹן",
+    "address": "כְּתוֹבֶת",
+    "date_of_birth": "תַאֲרִיך לֵידָה",
+    "description": "תֵאוּר",
+    "businesses": "עסקים"
+  }
+}
