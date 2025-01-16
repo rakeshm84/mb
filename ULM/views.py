@@ -99,18 +99,18 @@ class SetAuthentication(APIView):
             return JsonResponse({"error": "Tokens are required!"}, status=400)
         
         response = JsonResponse({"message": "Cookies set successfully!"})
-        # response.set_cookie(
-        #     'auth_token', access_token,
-        #     max_age=86400,                        
-        #     httponly=True,                     
-        #     secure=False,                      
-        #     samesite='None'
-        # )
+        response.set_cookie(
+            'auth_token', access_token,
+            max_age=86400,                        
+            httponly=True,                     
+            secure=True,                      
+            samesite='None'
+        )
         response.set_cookie(
             'refresh_token', 
             refresh_token,
             max_age=86400,
-            httponly=False,                     
+            httponly=True,                     
             secure=True,                      
             samesite='None'
         )
