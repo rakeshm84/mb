@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.js": "/static/js/main.aac79e9f.js",
+    "static/js/38.91a0acd4.chunk.js": "/static/js/38.91a0acd4.chunk.js",
+    "static/media/bg-sign-in-basic.jpeg": "/static/media/bg-sign-in-basic.f327db1d0e4b00ba3c81.jpeg",
+    "index.html": "/index.html",
+    "main.aac79e9f.js.map": "/static/js/main.aac79e9f.js.map",
+    "38.91a0acd4.chunk.js.map": "/static/js/38.91a0acd4.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/js/main.aac79e9f.js"
+  ]
+}
