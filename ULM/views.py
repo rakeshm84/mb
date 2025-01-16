@@ -97,20 +97,22 @@ class SetAuthentication(APIView):
 
         if not access_token or not refresh_token:
             return JsonResponse({"error": "Tokens are required!"}, status=400)
+        
         response = JsonResponse({"message": "Cookies set successfully!"})
+        # response.set_cookie(
+        #     'auth_token', access_token,
+        #     max_age=86400,                        
+        #     httponly=True,                     
+        #     secure=False,                      
+        #     samesite='None'
+        # )
         response.set_cookie(
-            'auth_token', access_token,
-            max_age=3600,                        
-            httponly=True,                     
-            secure=False,                      
-            samesite='Lax'
-        )
-        response.set_cookie(
-            'refresh_token', refresh_token,
+            'refresh_token', 
+            refresh_token,
             max_age=86400,
-            httponly=True,                     
-            secure=False,                      
-            samesite='Lax'
+            httponly=False,                     
+            secure=True,                      
+            samesite='None'
         )
         
         return response
@@ -120,12 +122,12 @@ class SetAuthentication(APIView):
         auth_cookie = request.COOKIES.get('auth_token')
         refresh_cookie = request.COOKIES.get('refresh_token')
 
-        if auth_cookie and refresh_cookie:
+        if auth_cookie:
             return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie,"message": "Cookies set successfully!"})
 
-            return True
+
         else:
-            return JsonResponse({"error": "Cookies not found!"}, status=400)
+            return JsonResponse({"error": "Cookies not found!"})
 
 
 @csrf_exempt
