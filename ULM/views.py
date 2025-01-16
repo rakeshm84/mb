@@ -31,7 +31,21 @@ class AuthenticationView(TokenObtainPairView):
 
         # Perform the default token obtain behavior
         response = super().post(request, *args, **kwargs)
-
+        response.set_cookie(
+            'auth_token', response.data.get('access'),
+            max_age=86400,                        
+            httponly=True,                     
+            secure=True,                      
+            samesite='None'
+        )
+        response.set_cookie(
+            'refresh_token', 
+            response.data.get('refresh'),
+            max_age=86400,
+            httponly=True,                     
+            secure=True,                      
+            samesite='None'
+        )
         if username:
             if 'profile' in User._meta.related_objects:
                 user = User.objects.select_related('profile').filter(username=username).first()
@@ -57,6 +71,7 @@ class AuthenticationView(TokenObtainPairView):
                         'lang': user.profile.language,
                         'desc': user.profile.desc,
                     })
+                    
         return response
     
 class UserDetailView(APIView):
@@ -79,7 +94,7 @@ class UserDetailView(APIView):
                 'lang': user.profile.language,
                 'desc': user.profile.desc,
             })
-        return Response(user_data, status=status.HTTP_200_OK)
+        response = Response(user_data, status=status.HTTP_200_OK)
 # Create your views here.
 class TestView(APIView):
     permission_classes = [AllowAny]
