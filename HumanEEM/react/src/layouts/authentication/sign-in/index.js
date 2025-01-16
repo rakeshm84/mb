@@ -36,6 +36,7 @@ function Basic() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [user, setuser] = useState(false);
+  const [dataRes, setdataRes] = useState({});
 
   const { login } = useAuth();
   const { ADMIN_URL, AUTH_API_URL } = useConstants();
@@ -58,6 +59,8 @@ function Basic() {
 
       if (cookieRes) {
         setuser(true);
+        setdataRes(cookieRes);
+
         // if (res.Status === 200) {
         //   window.location.replace(ADMIN_URL);
         // } else {
@@ -125,7 +128,7 @@ function Basic() {
 
             {user && (
               <>
-                <h1>{JSON.stringify(cookieRes)}</h1>{" "}
+                <h1>{JSON.stringify(dataRes)}</h1>{" "}
               </>
             )}
           </MDBox>
