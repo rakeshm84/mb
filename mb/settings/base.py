@@ -30,10 +30,7 @@ SECRET_KEY = 'django-insecure-b#ly6v+18a5l-)r3!o6qzg6h3j))xsx#7-2_g%_gciwsim=2_#
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-
 ALLOWED_HOSTS = env('ALLOWED_HOSTS').split(',')
-# ALLOWED_HOSTS = ['niyud.co.il', 'www.niyud.co.il', '64.176.165.149', '127.0.0.1', 'mike.mbapi.local', 'mike.human.local']
-
 
 
 # Application definition
@@ -165,7 +162,8 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        # 'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework_simplejwt.authentication.JWTStatelessUserAuthentication'
     ]
 }
 
@@ -184,9 +182,11 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOW_CREDENTIALS = True
 
+CSRF_COOKIE_SECURE = True
 CORS_ALLOW_HEADERS = [
     'content-type',
     'authorization',
+    'cookies',
 ]
 
 # AUTH_USER_MODEL = 'tenants.CustomUser'
@@ -232,6 +232,7 @@ MASTER_DB_DSN = f"{MASTER_DB['ENGINE']}://{MASTER_DB['USER']}:{MASTER_DB['PASSWO
 SUPPORTED_LANGUAGES = ["en", "he"]
 
 APP_DOMAIN = env('APP_DOMAIN')
+HUMAN_APP_DOMAIN = env('HUMAN_APP_DOMAIN')
 
 PLOI_API_TOKEN = env('PLOI_API_TOKEN')
 
@@ -264,3 +265,9 @@ LOGGING = {
         },
     },
 }
+
+ADMIN_APP_URL = env('ADMIN_URL')
+
+# API URLS
+ULM_API_URL = env('ULM_API_URL')
+HEEM_API_URL = env('HumanEEM_API_URL')

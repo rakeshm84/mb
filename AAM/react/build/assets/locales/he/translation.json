@@ -51,7 +51,8 @@
       "last_name_not_valid": "רק אותיות מותרות",
       "username": {
         "required": "שם משתמש נדרש",
-        "not_unique": "שם משתמש זה כבר בשימוש. אנא בחר שם אחר."
+        "not_unique": "שם משתמש זה כבר בשימוש. אנא בחר שם אחר.",
+        "space_not_allowed": "אסור רווח בשם המשתמש"
       },
       "email": {
         "required": "דוא\"ל נדרש",
@@ -72,7 +73,9 @@
         "mismatch": "הסיסמאות אינן תואמות"
       },
       "db_name_required": "שם מסד נתונים נדרש",
-      "username_required": "שדה שם משתמש לא יכול להיות ריק"
+      "username_required": "שדה שם משתמש לא יכול להיות ריק",
+      "subdomain_exists": "דומיין משנה כבר קיים",
+      "subdomain_lenght": "דומיין משנה חייב להיות בין 3 ו-63 תוים"
     },
     "persons": "אנשים",
     "person": "אָדָם",
@@ -82,6 +85,7 @@
     "address": "כְּתוֹבֶת",
     "date_of_birth": "תַאֲרִיך לֵידָה",
     "description": "תֵאוּר",
-    "businesses": "עסקים"
+    "businesses": "עסקים",
+    "subdomain": "דומיין משנה"
   }
 }

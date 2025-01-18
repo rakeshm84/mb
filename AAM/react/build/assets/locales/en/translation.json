@@ -54,7 +54,8 @@
       "last_name_not_valid": "Only letters are allowed",
       "username": {
         "required": "Username is required",
-        "not_unique": "This username is already in use. Please choose another one."
+        "not_unique": "This username is already in use. Please choose another one.",
+        "space_not_allowed": "Space is not allowed in username."
       },
       "email": {
         "required": "Email is required",
@@ -75,7 +76,9 @@
         "mismatch": "Passwords do not match"
       },
       "db_name_required": "Database name is required",
-      "username_required": "Username is required"
+      "username_required": "Username is required",
+      "subdomain_exists": "Subdomain already exists",
+      "subdomain_length": "Subdomain must be between 3 and 63 characters long."
     },
     "persons": "Persons",
     "person": "Person",
@@ -85,6 +88,7 @@
     "address": "Address",
     "date_of_birth": "Date of Birth",
     "description": "Description",
-    "businesses": "Businesses"
+    "businesses": "Businesses",
+    "subdomain": "Subdomain"
   }
 }

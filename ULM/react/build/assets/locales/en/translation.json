@@ -54,7 +54,8 @@
       "last_name_not_valid": "Only letters are allowed",
       "username": {
         "required": "Username is required",
-        "not_unique": "This username is already in use. Please choose another one."
+        "not_unique": "This username is already in use. Please choose another one.",
+        "space_not_allowed": "Space is not allowed in username."
       },
       "email": {
         "required": "Email is required",
