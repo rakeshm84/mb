@@ -11,6 +11,8 @@ from .models import Tenant
 from django.db.models import Q
 from django_datatables_view.base_datatable_view import BaseDatatableView
 import logging
+from django.db import connection
+
 logging.basicConfig(
     level=logging.DEBUG,  # Set the minimum level of messages to log
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -24,7 +26,16 @@ logger = logging.getLogger(__name__)
 class TestView(APIView):
     permission_classes = [AllowAny]
     def get(self, request):
-        logger.info(f"TEST LOG")
+        with connection.cursor() as cursor:
+            try:
+                cursor.execute(f"GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost';")
+                cursor.execute(f"FLUSH PRIVILEGES;")
+                print(f"Success")
+                return Response({"message": "Sucess"}, status=status.HTTP_201_CREATED)
+            except:
+                print(f"Error")
+                return Response({"message": "Error"}, status=status.HTTP_201_CREATED)
+                return
         # serializer = UserSerializer(data=request.data)
         return Response({"message": "Render from the AAM service"}, status=status.HTTP_201_CREATED)
 
