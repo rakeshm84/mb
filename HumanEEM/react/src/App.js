@@ -21,17 +21,32 @@ import { CacheProvider } from "@emotion/react";
 import createCache from "@emotion/cache";
 
 // Material Dashboard 2 React contexts
-import { useMaterialUIController } from "context";
+import { useMaterialUIController, setMiniSidenav } from "context";
 
 import AuthMiddleware from "middlewares/AuthMiddleware";
 import NoAuthMiddleware from "middlewares/NoAuthMiddleware";
 import SignIn from "layouts/authentication/sign-in";
+import Sidenav from "examples/Sidenav";
+import { routes } from "routes";
+
+// Images
+import brandWhite from "assets/images/logo-ct.png";
+import brandDark from "assets/images/logo-ct-dark.png";
 
 export default function App() {
   const [controller, dispatch] = useMaterialUIController();
-  const { direction, darkMode } = controller;
+  const {
+    miniSidenav,
+    direction,
+    layout,
+    sidenavColor,
+    transparentSidenav,
+    whiteSidenav,
+    darkMode,
+  } = controller;
   const [rtlCache, setRtlCache] = useState(null);
   const { pathname } = useLocation();
+  const [onMouseEnter, setOnMouseEnter] = useState(false);
 
   // Cache for the rtl
   useMemo(() => {
@@ -42,6 +57,20 @@ export default function App() {
 
     setRtlCache(cacheRtl);
   }, []);
+
+  const handleOnMouseEnter = () => {
+    if (miniSidenav && !onMouseEnter) {
+      setMiniSidenav(dispatch, false);
+      setOnMouseEnter(true);
+    }
+  };
+  // Close sidenav when mouse leave mini sidenav
+  const handleOnMouseLeave = () => {
+    if (onMouseEnter) {
+      setMiniSidenav(dispatch, true);
+      setOnMouseEnter(false);
+    }
+  };
 
   // Setting the dir attribute for the body element
   useEffect(() => {
@@ -91,52 +120,25 @@ export default function App() {
     <CacheProvider value={rtlCache}>
       <ThemeProvider theme={darkMode ? themeDarkRTL : themeRTL}>
         <CssBaseline />
-        <Route
-          path="/"
-          element={
-            <NoAuthMiddleware>
-              <SignIn />
-            </NoAuthMiddleware>
-          }
-          key="sign-in"
-        ></Route>
-        <Route
-          path="/sign-in"
-          element={
-            <NoAuthMiddleware>
-              <SignIn />
-            </NoAuthMiddleware>
-          }
-          key="sign-in"
-        ></Route>
-        {/* <Routes>{getRoutes([...routes])}</Routes> */}
+        <Routes>{getRoutes([...routes])}</Routes>
       </ThemeProvider>
     </CacheProvider>
   ) : (
     <ThemeProvider theme={darkMode ? themeDark : theme}>
       <CssBaseline />
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <NoAuthMiddleware>
-              <SignIn />
-            </NoAuthMiddleware>
-          }
-          key="sign-in"
-        ></Route>
-        <Route
-          path="/sign-in"
-          element={
-            <NoAuthMiddleware>
-              <SignIn />
-            </NoAuthMiddleware>
-          }
-          key="sign-in"
-        ></Route>
-
-        {/* {getRoutes([...routes])} */}
-      </Routes>
+      {layout === "dashboard" && (
+        <>
+          <Sidenav
+            color={sidenavColor}
+            brand={(transparentSidenav && !darkMode) || whiteSidenav ? brandDark : brandWhite}
+            brandName="MB"
+            routes={routes}
+            onMouseEnter={handleOnMouseEnter}
+            onMouseLeave={handleOnMouseLeave}
+          />
+        </>
+      )}
+      <Routes>{getRoutes([...routes])}</Routes>
     </ThemeProvider>
   );
 }

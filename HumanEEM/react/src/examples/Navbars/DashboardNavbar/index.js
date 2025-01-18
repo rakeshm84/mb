@@ -41,7 +41,8 @@ import {
 } from "context";
 
 import TranslateIcon from "@mui/icons-material/Translate";
-import { routes, admin_routes, human_tenant_routes } from "../../../routes";
+// import { routes, admin_routes, human_tenant_routes } from "../../../routes";
+import { routes } from "../../../routes";
 import useLanguageSwitcher from "../../../hooks/useLanguageSwitcher";
 import useAuth from "hooks/useAuth";
 import useAPI from "hooks/useAPI";
@@ -49,7 +50,7 @@ import useAPI from "hooks/useAPI";
 function DashboardNavbar({ absolute, light, isMini }) {
   const [navbarType, setNavbarType] = useState();
   const [controller, dispatch] = useMaterialUIController();
-  const { miniSidenav, transparentNavbar, fixedNavbar, openConfigurator, darkMode } = controller;
+  const { miniSidenav, transparentNavbar, fixedNavbar, darkMode } = controller;
   const [openMenu, setOpenMenu] = useState(false);
   const [openLanguageMenu, setOpenLanguageMenu] = useState(false);
   const [openUserMenu, setOpenUserMenu] = useState(false);
@@ -59,12 +60,8 @@ function DashboardNavbar({ absolute, light, isMini }) {
   const { logout, user } = useAuth();
   const { api } = useAPI();
 
-  const pages = user?.is_human_tenant
-    ? [...routes, ...human_tenant_routes]
-    : [...routes, ...admin_routes];
-  const all_routes = user?.is_human_tenant
-    ? [...routes, ...human_tenant_routes]
-    : [...routes, ...admin_routes];
+  const pages = routes;
+  const all_routes = routes;
   const routeObject = all_routes.find((r) => r.key === route[0]);
   const PageHeader = () => {
     const pagesList = [routeObject];
@@ -98,7 +95,6 @@ function DashboardNavbar({ absolute, light, isMini }) {
   }, [dispatch, fixedNavbar]);
 
   const handleMiniSidenav = () => setMiniSidenav(dispatch, !miniSidenav);
-  const handleConfiguratorOpen = () => setOpenConfigurator(dispatch, !openConfigurator);
   const handleOpenMenu = (event) => setOpenMenu(event.currentTarget);
   const handleOpenUserMenu = (event) => setOpenUserMenu(event.currentTarget);
   const handleCloseMenu = () => setOpenMenu(false);
@@ -256,17 +252,6 @@ function DashboardNavbar({ absolute, light, isMini }) {
                   {miniSidenav ? "menu_open" : "menu"}
                 </Icon>
               </IconButton>
-              {!user?.is_human_tenant && (
-                <IconButton
-                  size="small"
-                  disableRipple
-                  color="inherit"
-                  sx={navbarIconButton}
-                  onClick={handleConfiguratorOpen}
-                >
-                  <Icon sx={iconsStyle}>settings</Icon>
-                </IconButton>
-              )}
               <IconButton
                 size="small"
                 disableRipple

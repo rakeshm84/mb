@@ -60,6 +60,8 @@ class AuthenticationView(TokenObtainPairView):
                 next_url = ''
                 if user.is_superuser:
                     next_url = settings.ADMIN_APP_URL
+                else:
+                    next_url = settings.HUMAN_APP_URL
                 # Add user data to the response
                 response.data['user'] = {
                     'id': user.id,
@@ -393,3 +395,30 @@ def create_superuser(request):
             return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"error": "Invalid request method."}, status=405)
+
+class ClearAuthentication(APIView):
+    permission_classes = [AllowAny]
+
+
+    def get(self, request):        
+
+        response = JsonResponse({"message": "Cookies cleared successfully!"})
+        # response.delete_cookie('auth_token')    
+        # response.delete_cookie('refresh_token')
+        response.set_cookie(
+            'auth_token', '',
+            max_age=0,                        
+            httponly=True,                     
+            secure=True,                      
+            samesite='None'
+        )
+        response.set_cookie(
+            'refresh_token', 
+            '',
+            max_age=0,
+            httponly=True,                     
+            secure=True,                      
+            samesite='None'
+        )
+        
+        return response

@@ -1,13 +1,20 @@
 {
   "files": {
-    "main.js": "/static/js/main.168dbc4a.js",
+    "main.js": "/static/js/main.673d49e2.js",
     "static/js/38.91a0acd4.chunk.js": "/static/js/38.91a0acd4.chunk.js",
     "static/media/bg-sign-in-basic.jpeg": "/static/media/bg-sign-in-basic.f327db1d0e4b00ba3c81.jpeg",
+    "static/media/bg-profile.jpeg": "/static/media/bg-profile.af1219a742e09fc7b612.jpeg",
+    "static/media/dummy-user.jpg": "/static/media/dummy-user.bfef5c6ce52ad41e7422.jpg",
+    "static/media/marie.jpg": "/static/media/marie.c28f32663b6432b46f78.jpg",
+    "static/media/team-3.jpg": "/static/media/team-3.0ef0be95e6850814c79e.jpg",
+    "static/media/ivana-square.jpg": "/static/media/ivana-square.f7bc23b269d1d2509c82.jpg",
+    "static/media/kal-visuals-square.jpg": "/static/media/kal-visuals-square.3210e28a48ff572ae88b.jpg",
+    "static/media/team-4.jpg": "/static/media/team-4.85c82b6e60178804017f.jpg",
     "index.html": "/index.html",
-    "main.168dbc4a.js.map": "/static/js/main.168dbc4a.js.map",
+    "main.673d49e2.js.map": "/static/js/main.673d49e2.js.map",
     "38.91a0acd4.chunk.js.map": "/static/js/38.91a0acd4.chunk.js.map"
   },
   "entrypoints": [
-    "static/js/main.168dbc4a.js"
+    "static/js/main.673d49e2.js"
   ]
 }

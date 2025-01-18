@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import PropTypes from "prop-types";
 import axios from "axios";
 import useAuth from "hooks/useAuth";
+import useConstants from "constants";
 
 const AuthMiddleware = ({ children }) => {
+  const { AUTH_URL, AUTH_API_URL } = useConstants();
   const [isAuthenticated, setIsAuthenticated] = useState(null); // Track authentication status
   const location = useLocation();
   const { user, saveUser, BASE_URL } = useAuth();
@@ -32,7 +34,7 @@ const AuthMiddleware = ({ children }) => {
 
     try {
       // Validate the access token
-      await axios.post(`${BASE_URL}/authentication/verify/`, { token: accessToken });
+      await axios.post(`${AUTH_API_URL}/authentication/verify/`, { token: accessToken });
       setIsAuthenticated(true);
     } catch (error) {
       if (error.response && error.response.status === 401) {
@@ -40,7 +42,7 @@ const AuthMiddleware = ({ children }) => {
         const refreshToken = getRefreshToken();
         if (refreshToken) {
           try {
-            const response = await axios.post(`${BASE_URL}/authentication/refresh/`, {
+            const response = await axios.post(`${AUTH_API_URL}/authentication/refresh/`, {
               refresh: refreshToken,
             });
             saveTokens(response.data.access, refreshToken);
@@ -61,15 +63,18 @@ const AuthMiddleware = ({ children }) => {
   };
 
   useEffect(() => {
-    if (isAuthenticated) {
-      const accessToken = getAccessToken();
-      validateUser(accessToken);
-    }
+    const validateUserAsync = async () => {
+      if (isAuthenticated) {
+        const accessToken = getAccessToken();
+        await validateUser(accessToken);
+      }
+    };
+    validateUserAsync();
   }, [isAuthenticated]);
 
   const validateUser = async (accessToken) => {
     if (!user) {
-      const response = await axios.get(`${BASE_URL}/authentication/user/`, {
+      const response = await axios.get(`${AUTH_API_URL}/authentication/user/`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -78,9 +83,27 @@ const AuthMiddleware = ({ children }) => {
     }
   };
 
+  const setAuthTokens = async () => {
+    const accessToken = getAccessToken();
+
+    if (!accessToken) {
+      const auth_response = await axios.get(`${AUTH_API_URL}/get-authentication/`, {
+        withCredentials: true,
+      });
+
+      if (auth_response) {
+        saveTokens(auth_response.data.auth_token, auth_response.data.refresh_token);
+      }
+    }
+  };
+
   // Run token validation on mount
   useEffect(() => {
-    validateToken();
+    const validateAuthentication = async () => {
+      await setAuthTokens();
+      await validateToken();
+    };
+    validateAuthentication();
   }, []);
 
   // Handle authentication state
@@ -89,7 +112,7 @@ const AuthMiddleware = ({ children }) => {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/sign-in" state={{ from: location }} />;
+    window.location.assign(`${AUTH_URL}/sign-in`);
   }
 
   return children;
