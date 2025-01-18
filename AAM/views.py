@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 class TestView(APIView):
     permission_classes = [AllowAny]
     def get(self, request):
+        logger.info(f"TEST LOG")
         # serializer = UserSerializer(data=request.data)
         return Response({"message": "Render from the AAM service"}, status=status.HTTP_201_CREATED)
 
