@@ -10,7 +10,16 @@ from .serializers import TenantSerializer
 from .models import Tenant
 from django.db.models import Q
 from django_datatables_view.base_datatable_view import BaseDatatableView
-
+import logging
+logging.basicConfig(
+    level=logging.DEBUG,  # Set the minimum level of messages to log
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("app.log"),  # Log messages to a file
+        logging.StreamHandler()  # Also print messages to the console
+    ]
+)
+logger = logging.getLogger(__name__)
 # Create your views here.
 class TestView(APIView):
     permission_classes = [AllowAny]
@@ -34,28 +43,34 @@ class Create(APIView):
                 jsonResponse = response.json()
                 data = jsonResponse.get('data')
                 ulm_tenant_id = jsonResponse.get('tenant_id')
+                logger.info(f"ulm_tenant_id {ulm_tenant_id}")
                 tenant_serializer = TenantSerializer(data=data)
                 if tenant_serializer.is_valid():
+                    logger.info(f"tenant_serializer valid")
                     tenant = tenant_serializer.save()
                     if tenant:
+                        logger.info(f"tenant_id {tenant.pk}")
                         human_api_url = settings.HEEM_API_URL + "api/create/"
                         human_payload = { "db_name": tenant.db_name }
                         res = requests.post(human_api_url, json=human_payload)
                         if res.status_code == 201:
+                            logger.info(f"human_api_url OK")
                             jsonRes = res.json()
                             if jsonRes.get('success') == True:
+                                logger.info(f"human_api_url Success true")
                                 Tenant.objects.filter(id=tenant.pk).update(status=1)
                                 update_res = requests.post(f"{ulm_api}update/{ulm_tenant_id}", json={"status": 1})
                                 if update_res.status_code == 200:
+                                    logger.info(f"update_res OK")
                                     return Response({"message": "Human created successfully!"}, status=status.HTTP_201_CREATED)
                                 else:
-                                    return Response({"message": "Something went wrong!"}, status=status.HTTP_400_BAD_REQUEST)
+                                    return Response({"message": "Something went wrong1!"}, status=status.HTTP_400_BAD_REQUEST)
                             else:
                                 return Response({"message": jsonRes.get('message')}, status=status.HTTP_201_CREATED)
                         else:
-                            return Response({"message": "Something went wrong!"}, status=status.HTTP_400_BAD_REQUEST)
+                            return Response({"message": "Something went wrong2!"}, status=status.HTTP_400_BAD_REQUEST)
                     else:
-                        return Response({"message": "Something went wrong!"}, status=status.HTTP_400_BAD_REQUEST)
+                        return Response({"message": "Something went wrong3!"}, status=status.HTTP_400_BAD_REQUEST)
                 else:
                     return Response(
                         {
