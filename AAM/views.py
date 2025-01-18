@@ -11,8 +11,6 @@ from .models import Tenant
 from django.db.models import Q
 from django_datatables_view.base_datatable_view import BaseDatatableView
 import logging
-from django.db import connection
-
 logging.basicConfig(
     level=logging.DEBUG,  # Set the minimum level of messages to log
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -26,16 +24,6 @@ logger = logging.getLogger(__name__)
 class TestView(APIView):
     permission_classes = [AllowAny]
     def get(self, request):
-        with connection.cursor() as cursor:
-            try:
-                cursor.execute(f"GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost';")
-                cursor.execute(f"FLUSH PRIVILEGES;")
-                print(f"Success")
-                return Response({"message": "Sucess"}, status=status.HTTP_201_CREATED)
-            except:
-                print(f"Error")
-                return Response({"message": "Error"}, status=status.HTTP_201_CREATED)
-                return
         # serializer = UserSerializer(data=request.data)
         return Response({"message": "Render from the AAM service"}, status=status.HTTP_201_CREATED)
 
@@ -73,16 +61,16 @@ class Create(APIView):
                                 Tenant.objects.filter(id=tenant.pk).update(status=1)
                                 update_res = requests.post(f"{ulm_api}update/{ulm_tenant_id}", json={"status": 1})
                                 if update_res.status_code == 200:
-                                    logger.info(f"update_res OK")
+                                    logger.info(f"human_api_url Success true")
                                     return Response({"message": "Human created successfully!"}, status=status.HTTP_201_CREATED)
                                 else:
-                                    return Response({"message": "Something went wrong1!"}, status=status.HTTP_400_BAD_REQUEST)
+                                    return Response({"message": "Something went wrong!"}, status=status.HTTP_400_BAD_REQUEST)
                             else:
                                 return Response({"message": jsonRes.get('message')}, status=status.HTTP_201_CREATED)
                         else:
-                            return Response({"message": "Something went wrong2!"}, status=status.HTTP_400_BAD_REQUEST)
+                            return Response({"message": "Something went wrong!"}, status=status.HTTP_400_BAD_REQUEST)
                     else:
-                        return Response({"message": "Something went wrong3!"}, status=status.HTTP_400_BAD_REQUEST)
+                        return Response({"message": "Something went wrong!"}, status=status.HTTP_400_BAD_REQUEST)
                 else:
                     return Response(
                         {
