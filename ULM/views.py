@@ -34,27 +34,36 @@ class AuthenticationView(TokenObtainPairView):
 
         # Perform the default token obtain behavior
         response = super().post(request, *args, **kwargs)
-        response.set_cookie(
-            'auth_token', response.data.get('access'),
-            max_age=86400,                        
-            httponly=True,                     
-            secure=True,                      
-            samesite='None'
-        )
-        response.set_cookie(
-            'refresh_token', 
-            response.data.get('refresh'),
-            max_age=86400,
-            httponly=True,                     
-            secure=True,                      
-            samesite='None'
-        )
+        
         if username:
             if any(rel.get_accessor_name() == 'profile' for rel in User._meta.related_objects):
                 user = User.objects.select_related('profile').filter(username=username).first()
 
             if user:
-                is_human_tenant = request.session.get('is_human_tenant', False)
+
+                tenant_data = Tenant.objects.filter(entity_id=user.id).first()
+
+                if tenant_data and not tenant_data.status == 1:
+                    return Response(
+                        {"detail": "Access denied!"},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+                
+                response.set_cookie(
+                    'auth_token', response.data.get('access'),
+                    max_age=86400,                        
+                    httponly=True,                     
+                    secure=True,                      
+                    samesite='None'
+                )
+                response.set_cookie(
+                    'refresh_token', 
+                    response.data.get('refresh'),
+                    max_age=86400,
+                    httponly=True,                     
+                    secure=True,                      
+                    samesite='None'
+                )
 
                 next_url = ''
                 if user.is_superuser:
@@ -69,7 +78,6 @@ class AuthenticationView(TokenObtainPairView):
                     'first_name': user.first_name,
                     'last_name': user.last_name,
                     'next_url': next_url,
-                    'is_human_tenant': is_human_tenant,
                 }
 
                 # Check if the 'profile' related object exists
