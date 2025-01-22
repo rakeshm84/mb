@@ -18,10 +18,11 @@ class CreateHuman(APIView):
         human_db = create_db(request.data.get('db_name'))
         
         if human_db:
-            try:
-                run_migrations(human_db)
-                return Response({"message": "Created Successfully", "success": True}, status=status.HTTP_201_CREATED)
-            except Exception as e:
-                return Response({"message": "Error running migrations", "success": False}, status=status.HTTP_201_CREATED)
+            return Response({"message": "Created Successfully", "success": True}, status=status.HTTP_201_CREATED)
+            # try:
+            #     run_migrations(human_db)
+            #     return Response({"message": "Created Successfully", "success": True}, status=status.HTTP_201_CREATED)
+            # except Exception as e:
+            #     return Response({"message": "Error running migrations", "success": False}, status=status.HTTP_201_CREATED)
         else:
             return Response({"message": "Something went wrong!"}, status=status.HTTP_400_BAD_REQUEST)

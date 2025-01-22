@@ -8,6 +8,7 @@ from django.contrib.auth.password_validation import validate_password
 from .validation_messages import ValidationMessages
 from django.utils.translation import gettext_lazy as _
 import re
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
@@ -135,3 +136,26 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = '__all__'
+
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+
+    @classmethod
+
+    def get_token(cls, user):
+        token = super().get_token(user)
+        token['username'] = user.username
+        token['email'] = user.email
+        token['is_superuser'] = user.is_superuser
+        token['is_tenant'] = False
+              
+        tenant_data = Tenant.objects.filter(entity_id=user.id).first()
+        if tenant_data:
+            user_permissions = user.get_all_permissions(tenant_data.id)
+            token['is_tenant'] = True
+            token['tenant_id'] = tenant_data.id
+            token['tenant_parent_id'] = tenant_data.parent_id
+            token['db_name'] = tenant_data.db_name
+            token['dsn'] = tenant_data.dsn
+            token['entity_type'] = tenant_data.entity
+            token['permissions'] = list(user_permissions)
+        return token

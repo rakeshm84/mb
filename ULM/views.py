@@ -1,6 +1,5 @@
 from django.shortcuts import render
-from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenVerifyView
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -10,12 +9,12 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 from django.conf import settings
-from .serializers import UserSerializer, TenantSerializer
+from .serializers import UserSerializer, TenantSerializer, MyTokenObtainPairSerializer
 from .models import Tenant, UserProfile
 from django.db.models import OuterRef, Subquery, Value, Func, F, JSONField
 
 class AuthenticationView(TokenObtainPairView):
-    serializer_class = TokenObtainPairSerializer
+    serializer_class = MyTokenObtainPairSerializer
 
     def post(self, request, *args, **kwargs):
         # Perform the default token obtain behavior
@@ -113,7 +112,36 @@ class TestView(APIView):
     permission_classes = [AllowAny]
     def get(self, request):
         # serializer = UserSerializer(data=request.data)
-        return Response({"message": "Render from the ULM service"}, status=status.HTTP_201_CREATED)
+        # if req_user.is_tenant:
+        perm = request.auth_user.has_permission("ULM.view_tenant")
+            # user = User.objects.get(username=req_user.username)
+            # g_permissions = user.get_group_permissions()
+            # permissions = user.get_user_permissions()
+            # get_all_permissions = user.get_all_permissions()
+            # perm = user.has_perm("ULM.view_tenant", req_user.tenant_id)
+        return Response({"message": perm}, status=status.HTTP_201_CREATED)
+        # return Response({"message": "Render from the ULM service"}, status=status.HTTP_201_CREATED)
+    
+    def post(self, request, *args, **kwargs):
+        from django.contrib.auth.models import Group, Permission
+        # editor_group, created = Group.objects.get_or_create(name='Test')
+
+        # permission = Permission.objects.get(codename='view_userprofile')
+        # editor_group.permissions.add(permission)
+         # content_type = ContentType.objects.get_for_model(UserProfile)
+        # permission, created = Permission.objects.get_or_create(
+        #     codename='can_test',
+        #     name='Can Test Profiles',
+        #     content_type=content_type,
+        # )
+
+        # user = User.objects.get(username='john')
+        # permission = Permission.objects.get(codename='can_test')
+        # user.user_permissions.add(permission)
+        # user.save()
+
+        return Response({"message": "Success"}, status=status.HTTP_201_CREATED)
+    
 # Create your views here.
 class SetAuthentication(APIView):
     permission_classes = [AllowAny]
@@ -130,7 +158,7 @@ class SetAuthentication(APIView):
         response.set_cookie(
             'auth_token', access_token,
             max_age=86400,                        
-            httponly=True,                     
+            httponly=True,
             secure=True,                      
             samesite='None'
         )
@@ -146,16 +174,38 @@ class SetAuthentication(APIView):
         return response
 
 
-    def get(self, request):        
+    def get(self, request):       
+        from rest_framework_simplejwt.tokens import AccessToken 
         auth_cookie = request.COOKIES.get('auth_token')
         refresh_cookie = request.COOKIES.get('refresh_token')
-
+        
         if auth_cookie:
-            return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie,"message": "Cookies set successfully!"})
+            platform = request.GET.get('platform')
 
+            try:
+                access_token = AccessToken(auth_cookie)
+                user_data = access_token.payload
+            
+                is_superuser = user_data.get('is_superuser', False)
+                is_tenant = user_data.get('is_tenant', False)
+                is_human = is_tenant and user_data.get('entity_type', None) == 'human'
+                if platform == 'admin':
+                    if is_superuser:
+                        return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie,"message": "Cookies set successfully!"}, status=200)
+                    
+                elif platform == 'human':
+                    if is_human:
+                        return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie,"message": "Cookies set successfully!"}, status=200)
+                
+                elif platform == 'ulm':
+                    if is_superuser:
+                        return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "logged_user": "admin", "message": "Cookies set successfully!"}, status=200)
+                    elif is_human:
+                        return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "logged_user": "human", "message": "Cookies set successfully!"}, status=200)
+            except:
+                None
 
-        else:
-            return JsonResponse({"error": "Cookies not found!"})
+        return JsonResponse({"error": "Cookies not found!", "status": False}, status=401)
 
 class UserEditView(APIView):
     permission_classes = [IsAuthenticated]
@@ -225,74 +275,61 @@ class UserEditView(APIView):
             return Response({"message": "Person not found"}, status=status.HTTP_404_NOT_FOUND)
 
 from django_datatables_view.base_datatable_view import BaseDatatableView
+from django.db.models import Q
+
 class PersonsListView(BaseDatatableView):
     model = Tenant  # Change the model to Tenant
 
-    columns = ['id', 'user_data', 'db_name', 'status', 'created_at']
-    searchable_columns = ['user_data', 'db_name']
-    order_columns = ['id', 'user_data', 'db_name', 'status', 'created_at']
+    columns = ['id', 'first_name', 'last_name', 'email', 'domain','subdomain', 'status', 'created_at']
+    searchable_columns = ['first_name', 'last_name', 'email', 'domain','subdomain']
+    order_columns = ['id', 'first_name', 'last_name', 'email', 'domain','subdomain', 'status', 'created_at']
 
-    def get_initial_queryset(self):
-        # Subquery to get user data as JSON
-        user_subquery = User.objects.filter(id=OuterRef('entity_id')).annotate(
-            data=Func(
-                Value('username'),
-                F('username'),
-                Value('first_name'),
-                F('first_name'),
-                Value('last_name'),
-                F('last_name'),
-                Value('email'),
-                F('email'),
-                Value('date_joined'),
-                F('date_joined'),
-                function='JSON_OBJECT',
-                output_field=JSONField()
-            )
-        ).values('data')[:1]
+    def get_initial_queryset(self):       
+        return Tenant.objects.filter(entity='human')
 
-        # Annotate the subquery to the Tenant model
-        return Tenant.objects.filter(entity='human').annotate(
-            user_data=Subquery(user_subquery)
-        )
-
-    def filter_queryset(self, qs):
-        # Apply search filter
+    def filter_queryset(self, qs):    
         search_value = self.request.GET.get('search[value]', '').strip()
         if search_value:
             qs = qs.filter(
-                Q(user_data__icontains=search_value) |
-                Q(name__icontains=search_value) |
-                Q(slug__icontains=search_value) |
-                Q(domain__icontains=search_value)
+                Q(firstname__icontains=search_value) |   
+                Q(lastname__icontains=search_value) |
+                Q(email__icontains=search_value) |   
+                Q(subdomain__icontains=search_value) | 
+                Q(status__icontains=search_value)    
             )
-   
         return qs
     
     def ordering(self, qs):
         order = self.request.GET.get("order[0][column]")
         direction = self.request.GET.get("order[0][dir]", "asc")
-
+        
         if order == "first_name":
-            qs = qs.order_by("user_data__first_name" if direction == "asc" else "-user_data__first_name")
+            qs = qs.order_by("firstname" if direction == "asc" else "-firstname")
+        elif order == "last_name":
+            qs = qs.order_by("lastname" if direction == "asc" else "-lastname")
         elif order == "email":
-            qs = qs.order_by("user_data__email" if direction == "asc" else "-user_data__email")
-        elif order == "db_name":
-            qs = qs.order_by("db_name" if direction == "asc" else "-db_name")
-        elif order == "date_joined":
-            qs = qs.order_by("user_data__date_joined" if direction == "asc" else "-user_data__date_joined")
+            qs = qs.order_by("email" if direction == "asc" else "-email")
+        elif order == "subdomain":
+            qs = qs.order_by("subdomain" if direction == "asc" else "-subdomain")
+        elif order == "status":
+            qs = qs.order_by("status" if direction == "asc" else "-status")
+        elif order == "created_at":
+            qs = qs.order_by("created_at" if direction == "asc" else "-created_at")
 
         return qs
 
     def prepare_results(self, qs):
-        # Format the results to include user_data as a dictionary
+        # Format the results to include the individual fields (no need for user_data)
         return [
             {
                 'id': tenant.id,
                 'entity_id': tenant.entity_id,
+                'first_name': tenant.firstname,
+                'last_name': tenant.lastname,
+                'email': tenant.email,
                 'db_name': tenant.db_name,
+                'subdomain': tenant.subdomain + "." + settings.HUMAN_APP_DOMAIN,
                 'status': tenant.status,
-                'user_data': tenant.user_data,  # This will be the JSON from the subquery
                 'created_at': tenant.created_at,
             }
             for tenant in qs
@@ -309,19 +346,6 @@ class CreateUser(APIView):
         if serializer.is_valid():
             user = serializer.save()
             if user:
-                db_name = settings.MASTER_DB_NAME + '_human_' + str(user.pk)
-                master_db_dsn_string = settings.MASTER_DB_DSN
-                master_db_dsn = parse_connection_string(master_db_dsn_string)
-                tenant_db_dsn = {
-                    "driver": master_db_dsn['ENGINE'],
-                    "host": master_db_dsn['HOST'],
-                    "dbname": db_name,
-                    "user": master_db_dsn['USER'],
-                    "password": master_db_dsn['PASSWORD'],
-                    "port": master_db_dsn['PORT'],
-                }
-                dsn = _dsn_to_string(tenant_db_dsn)
-
                 tenant_data = {
                     'entity': 'human',
                     'entity_id': user.pk,
@@ -330,16 +354,32 @@ class CreateUser(APIView):
                     'email': user.email,
                     'name': user.username,
                     'subdomain': subdomain,
-                    'db_name': db_name,
-                    'dsn': dsn,
                     'status': 0
                 }
 
                 tenant_serializer = TenantSerializer(data=tenant_data)
                 if tenant_serializer.is_valid():
                     tenant = tenant_serializer.save()
-                    if tenant:
-                        return Response({"message": "User created successfully!", "user_id": user.pk, "data": tenant_data, "tenant_id": tenant.pk}, status=status.HTTP_201_CREATED)
+                    if tenant:                                                
+                        db_name = settings.MASTER_DB_NAME + '_human_' + str(tenant.pk)                     
+                        master_db_dsn_string = settings.MASTER_DB_DSN
+                        master_db_dsn = parse_connection_string(master_db_dsn_string)
+                        tenant_db_dsn = {
+                            "driver": master_db_dsn['ENGINE'],
+                            "host": master_db_dsn['HOST'],
+                            "dbname": db_name,
+                            "user": master_db_dsn['USER'],
+                            "password": master_db_dsn['PASSWORD'],
+                            "port": master_db_dsn['PORT'],
+                        }
+                        dsn = _dsn_to_string(tenant_db_dsn)
+                        tenant.db_name = db_name
+                        tenant.dsn = dsn                    
+                        tenant.save()
+                        
+                        data = {**tenant_data, "db_name": tenant.db_name, "dsn": tenant.dsn}
+                                                
+                        return Response({"message": "User created successfully!", "user_id": user.pk, "data": data, "tenant_id": tenant.pk}, status=status.HTTP_201_CREATED)
                     else:
                         Response({"message": "Something went wrong!"}, status=status.HTTP_400_BAD_REQUEST)
                 else:
@@ -422,3 +462,60 @@ class ClearAuthentication(APIView):
         )
         
         return response
+    
+class RecentRegistrationView(BaseDatatableView):
+    model = Tenant
+    columns = ['id', 'first_name', 'last_name', 'email', 'db_name', 'status', 'created_at']
+    def get_initial_queryset(self):       
+        return Tenant.objects.filter(entity='human').filter(status=True)
+
+    def filter_queryset(self, qs):
+        # Apply search filter
+        limit = self.request.GET.get('limit')
+        if limit:
+            try:
+                limit = int(limit)                
+                return qs.order_by('-created_at')[:limit]
+            except ValueError:
+                pass
+        return super().paginate_queryset(qs)    
+
+    def prepare_results(self, qs):
+        # Format the results to include user_data as a dictionary
+        return [
+            {
+                'id': tenant.id,
+                'entity_id': tenant.entity_id,
+                'first_name': tenant.firstname,
+                'last_name': tenant.lastname,
+                'email': tenant.email,
+                'db_name': tenant.db_name,
+                'status': tenant.status,
+                'created_at': tenant.created_at,
+            }
+            for tenant in qs
+        ]
+        
+
+class CheckPermission(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, type):
+        auth_user = request.auth_user
+
+        is_superuser = False
+        is_human = False
+        if type == 'admin':
+            if hasattr(auth_user, 'is_superuser'):
+                is_superuser = auth_user.is_superuser
+            
+            return Response({"success": is_superuser}, status=status.HTTP_200_OK)
+        elif type == 'human':
+            if hasattr(auth_user, 'is_tenant'):
+                if auth_user.is_tenant:
+                    if hasattr(auth_user, 'entity_type'):
+                        is_human = auth_user.entity_type == 'human'
+            
+            return Response({"success": is_human}, status=status.HTTP_200_OK)
+        
+        return Response({"success": False}, status=status.HTTP_401_UNAUTHORIZED)

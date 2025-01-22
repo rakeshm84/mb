@@ -11,7 +11,7 @@ class Tenant(models.Model):
     name = models.CharField(max_length=100)
     subdomain = models.CharField(max_length=100)
     domain = models.CharField(max_length=100, unique=True, null=True)
-    db_name = models.CharField(max_length=100, unique=True)
+    db_name = models.CharField(max_length=100, unique=True, blank=True, null=True)
     dsn = models.TextField(null=True)
     status = models.BooleanField(default=True, null=False)
     shared_id = models.IntegerField(null=False, default=0)
@@ -34,3 +34,30 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
+
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericForeignKey
+
+class PermissionsMeta(models.Model):
+    id = models.AutoField(primary_key=True)
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    model_id = models.PositiveIntegerField()
+    tenant_id = models.IntegerField()
+    parent_tenant_id = models.IntegerField()
+
+    # Generic Foreign Key
+    content_object = GenericForeignKey('content_type', 'model_id')
+
+    class Meta:
+        db_table = "permissions_meta"
+
+    def __str__(self):
+        return f"{self.content_type} - {self.model_id} (Tenant: {self.tenant_id})"
+    
+from django.contrib.auth.models import User
+
+def custom_has_permission(self, perm):
+    if self.is_tenant:
+        return perm in self.permissions
+
+User.add_to_class('has_permission', custom_has_permission)

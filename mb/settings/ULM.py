@@ -5,6 +5,11 @@ ENABLE_SERVICES = ['ULM'];
 INSTALLED_APPS += [
     'ULM',
 ]
+
+MIDDLEWARE += [
+    'ULM.middlewares.CustomAuthMiddleware',
+]
+
 STATIC_URL = 'static/'
 
 # STATICFILES_DIRS = [os.path.join(BASE_DIR, 'react', 'build', 'static')]
@@ -25,4 +30,8 @@ TEMPLATES = [
             ],
         },
     },
+]
+
+AUTHENTICATION_BACKENDS = [
+    'ULM.backends.CustomPermissionBackend',
 ]
