@@ -60,7 +60,7 @@ class UserSerializer(serializers.ModelSerializer):
                 errors.setdefault('password', []).append(ValidationMessages.PASSWORD_LOWERCASE)
             if not re.search(r'\d', password):
                 errors.setdefault('password', []).append(ValidationMessages.PASSWORD_DIGIT)
-            if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+            if not re.search(r'[@$!%*?&\-_+=.,#^~:;|/\\]', password):
                 errors.setdefault('password', []).append(ValidationMessages.PASSWORD_SPECIAL_CHAR)
 
         # Validate first_name
