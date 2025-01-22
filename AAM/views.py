@@ -10,17 +10,17 @@ from .models import Tenant
 from django.db.models import Q
 from django_datatables_view.base_datatable_view import BaseDatatableView
 
-# import logging
-# logging.basicConfig(
-#     level=logging.DEBUG,  # Set the minimum level of messages to log
-#     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-#     handlers=[
-#         logging.FileHandler("app.log"),  # Log messages to a file
-#         logging.StreamHandler()  # Also print messages to the console
-#     ]
-# )
+import logging
+logging.basicConfig(
+    level=logging.DEBUG,  # Set the minimum level of messages to log
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("app.log"),  # Log messages to a file
+        logging.StreamHandler()  # Also print messages to the console
+    ]
+)
 
-# logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 # Create your views here.
 class TestView(APIView):
     permission_classes = [AllowAny]
@@ -47,7 +47,9 @@ class Create(APIView):
                 human_api_url = settings.HEEM_API_URL + "api/create/"
                 human_payload = { "db_name": data['db_name'] }
                 res = requests.post(human_api_url, json=human_payload)
+                logger.info(f"human_api_url {human_api_url}")
                 if res.status_code == 201:
+                    logger.info(f"human_api_url res.status_code {res.status_code}")
                     jsonRes = res.json()
                     if jsonRes.get('success') == True:                       
                         update_res = requests.post(f"{ulm_api}update/{ulm_tenant_id}", json={"status": 1})
