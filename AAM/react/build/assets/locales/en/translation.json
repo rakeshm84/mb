@@ -24,7 +24,8 @@
       "add_new": "Add new",
       "submit": "Submit",
       "update": "Update",
-      "add_new_tenant": "Add new tenant"
+      "add_new_tenant": "Add new tenant",
+      "add_role": "Add Role"
     },
     "logout": "Logout",
 
@@ -89,6 +90,9 @@
     "date_of_birth": "Date of Birth",
     "description": "Description",
     "businesses": "Businesses",
-    "subdomain": "Subdomain"
+    "subdomain": "Subdomain",
+    "roles": "Roles",
+    "role": "Role",
+    "assign_permissions": "Assign Permissions"
   }
 }

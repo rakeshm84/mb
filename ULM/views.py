@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenVerifyView
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -10,7 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from django.conf import settings
 from .serializers import UserSerializer, TenantSerializer, MyTokenObtainPairSerializer
-from .models import Tenant, UserProfile
+from .models import Tenant, UserProfile, PermissionsMeta
 from django.db.models import OuterRef, Subquery, Value, Func, F, JSONField
 
 class AuthenticationView(TokenObtainPairView):
@@ -527,3 +527,116 @@ class CheckPermission(APIView):
             return Response({"success": is_human}, status=status.HTTP_200_OK)
         
         return Response({"success": False}, status=status.HTTP_401_UNAUTHORIZED)
+    
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
+
+class CreateCustomPermission(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        codename = request.POST.get('codename')
+        name = request.POST.get('name')
+        model_name = request.POST.get('model_name')  # e.g., "user" for the User model
+
+        if not codename or not name or not model_name:
+            return JsonResponse({"error": "Missing required fields (codename, name, model_name)."}, status=400)
+
+        try:
+            # Get the ContentType for the specified model
+            content_type = ContentType.objects.get(model=model_name)
+
+            # Create the permission
+            permission, created = Permission.objects.get_or_create(
+                codename=codename,
+                name=name,
+                content_type=content_type,
+            )
+
+            if created:
+                return JsonResponse({"message": f"Permission '{name}' created successfully!"}, status=201)
+            else:
+                return JsonResponse({"message": f"Permission '{name}' already exists."}, status=200)
+
+        except ContentType.DoesNotExist:
+            return JsonResponse({"error": "Invalid model name provided."}, status=400)
+        
+class RolesListView(BaseDatatableView):
+    model = Group
+    columns = ['id', 'name']
+    searchable_columns = ['id', 'name']
+    order_columns = ['id', 'name']
+    def get_initial_queryset(self):       
+        group_content_type = ContentType.objects.get_for_model(Group)
+
+        # Filter PermissionsMeta by tenant_id and the Group content type
+        permission_meta_records = PermissionsMeta.objects.filter(
+            content_type=group_content_type,
+            tenant_id=0
+        )
+
+        # Fetch the corresponding groups using their IDs
+        group_ids = permission_meta_records.values_list('model_id', flat=True)
+        return Group.objects.filter(id__in=group_ids)
+
+    def filter_queryset(self, qs):    
+        search_value = self.request.GET.get('search[value]', '').strip()
+        if search_value:
+            qs = qs.filter(
+                Q(id__icontains=search_value) |   
+                Q(name__icontains=search_value)
+            )
+        return qs
+    
+    def ordering(self, qs):
+        order = self.request.GET.get("order[0][column]")
+        direction = self.request.GET.get("order[0][dir]", "asc")
+        
+        if order == "id":
+            qs = qs.order_by("id" if direction == "asc" else "-id")
+        elif order == "name":
+            qs = qs.order_by("name" if direction == "asc" else "-name")
+
+        return qs
+
+    def prepare_results(self, qs):
+        # Format the results to include user_data as a dictionary
+        return [
+            {
+                'id': group.id,
+                'name': group.name,
+            }
+            for group in qs
+        ]
+    
+class PermissionListView(APIView):
+    permission_classes = [AllowAny] 
+
+    def get(self, request):        
+        permission_content_type = ContentType.objects.get_for_model(Permission)
+        permission_meta_records = PermissionsMeta.objects.filter(
+            content_type=permission_content_type,
+            tenant_id=0
+        )
+        perm_ids = permission_meta_records.values_list('model_id', flat=True)
+
+        permissions = Permission.objects.select_related('content_type').filter(id__in=perm_ids)
+        permissions_dict = {}
+
+        for perm in permissions:
+            permission_array_item = {}
+            content_type_name = perm.content_type.model
+            if content_type_name not in permissions_dict:
+                permissions_dict[content_type_name] = []
+            permission_array_item['id'] = perm.id
+            permission_array_item['name'] = perm.name
+            permissions_dict[content_type_name].append(permission_array_item)
+
+        # Example output formatting
+        formatted_permissions = []
+        for content_type, perms in permissions_dict.items():
+            formatted_permissions.append({
+                content_type: perms
+            })
+       
+        return JsonResponse(formatted_permissions, safe=False  )

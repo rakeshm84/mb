@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import AuthenticationView, UserDetailView, TestView, create_superuser, SetAuthentication, UserEditView, PersonsListView, CreateUser, UpdateUser, ClearAuthentication, RecentRegistrationView, CheckPermission
+from .views import AuthenticationView, UserDetailView, TestView, create_superuser, SetAuthentication, UserEditView, PersonsListView, CreateUser, UpdateUser, ClearAuthentication, RecentRegistrationView, CheckPermission, CreateCustomPermission, RolesListView, PermissionListView
 from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
 
 urlpatterns = [
@@ -19,4 +19,7 @@ urlpatterns = [
     path('create/', CreateUser.as_view(), name='create_user'),
     path('update/<int:id>', UpdateUser.as_view(), name='update_user'),
     path('recent_registration/', RecentRegistrationView.as_view(), name='recent_registration'),
+    path('create-permission/', CreateCustomPermission.as_view(), name='create_permission'),
+    path('get_roles/', RolesListView.as_view(), name='roles_list'),
+    path('get-all-permissions/', PermissionListView.as_view(), name='get-all-permissions'),
 ]
