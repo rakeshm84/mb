@@ -640,3 +640,32 @@ class PermissionListView(APIView):
             })
        
         return JsonResponse(formatted_permissions, safe=False  )
+    
+class GroupCreateView(APIView):
+    permission_classes = [AllowAny]
+    def post(self, request):
+        """
+        Create a new group (without an id).
+        """     
+        return self.create_group(request)
+
+    def create_group(self, request):
+        try:
+            group_name = request.data.get("name")
+            permission_ids = request.data.get('permissions', [])
+           
+            if not group_name:
+                return Response({"errors": "Group name is required."}, status=status.HTTP_400_BAD_REQUEST)
+           
+            group, created = Group.objects.get_or_create(name=group_name)
+
+            if permission_ids and created:              
+                group.permissions.add(*permission_ids)
+           
+            if created:
+                return Response({"message": "Group created successfully!"}, status=status.HTTP_201_CREATED)
+            else:
+                return Response({"errors": "Group with this name already exists!"}, status=status.HTTP_409_CONFLICT)
+
+        except Exception as e:            
+            return Response({"errors": "An error occurred while creating the group."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

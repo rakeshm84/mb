@@ -169,3 +169,29 @@ class PermissionListView(APIView):
             return Response(response.json(), status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class GroupCreateView(APIView):
+    permission_classes = [IsAuthenticated] 
+    def post(self, request):
+        """
+        Create a new group (without an id).
+        """
+        ulm_api = settings.ULM_API_URL + "api/"
+        api_url = ulm_api + "create_group/"
+        try:
+            
+            payload= request.data
+            response =  requests.post(api_url, json=payload)            
+            
+            if(response.status_code == 400):
+                return Response({"errors": "Group name is required."}, status=status.HTTP_400_BAD_REQUEST)
+            elif response.status_code == 409:
+                return Response({"errors": "Group already exists!"}, status=status.HTTP_409_CONFLICT)
+            elif response.status_code == 500:
+                return Response({"errors": "Something went wrong!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            if(response.status_code == 201):
+                return Response({"message": "Group created successfully!"}, status=status.HTTP_201_CREATED) 
+
+        except Exception as e:
+            return Response({"errors": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

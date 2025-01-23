@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import TestView, Create, PersonsView, RecentRegistrationView, RolesListView, PermissionListView
+from .views import TestView, Create, PersonsView, RecentRegistrationView, RolesListView, PermissionListView, GroupCreateView
 from rest_framework_simplejwt.views import  TokenVerifyView
 
 
@@ -10,4 +10,5 @@ urlpatterns = [
     path('recent_registration/', RecentRegistrationView.as_view(), name='recent_registration'),
     path('get_roles/', RolesListView.as_view(), name='roles_list'),
     path('get-all-permissions/', PermissionListView.as_view(), name='get-all-permissions/'),
+    path("create_group/", GroupCreateView.as_view(), name="create_group"),
 ]
