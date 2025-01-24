@@ -574,6 +574,8 @@ class CreateCustomPermission(APIView):
             return JsonResponse({"error": "Invalid model name provided."}, status=400)
         
 class RolesListView(BaseDatatableView):
+    permission_classes = [IsAuthenticated]
+    
     model = Group
     columns = ['id', 'name']
     searchable_columns = ['id', 'name']
