@@ -52,7 +52,19 @@ class RolesListView(APIView):
             'length': length,
         }
 
-        headers = request.headers
+        # headers = request.headers
+        token = ''
+        auth_header = request.headers.get('Authorization')    
+        if auth_header:            
+            parts = auth_header.split()
+            if len(parts) == 2:
+                token = parts[1]
+                token = token   
+        
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json',          
+        }
 
         try:
             response = requests.get(api_url, params=params, headers=headers)                          
@@ -72,7 +84,19 @@ class PermissionListView(APIView):
         ulm_api = settings.ULM_API_URL + "api/"
         api_url = ulm_api + "get-all-permissions/"
 
-        headers = request.headers
+        # headers = request.headers
+        token = ''
+        auth_header = request.headers.get('Authorization')    
+        if auth_header:            
+            parts = auth_header.split()
+            if len(parts) == 2:
+                token = parts[1]
+                token = token   
+        
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json',          
+        }
         
         try:
             response = requests.get(api_url, headers=headers)                   
@@ -82,7 +106,7 @@ class PermissionListView(APIView):
         
 class GroupCreateView(APIView):
     permission_classes = [IsAuthenticated] 
-    
+
     def post(self, request):
         """
         Create a new group (without an id).
@@ -91,7 +115,19 @@ class GroupCreateView(APIView):
         api_url = ulm_api + "create_group/"          
             
         payload= request.data
-        headers = request.headers
+        # headers = request.headers
+        token = ''
+        auth_header = request.headers.get('Authorization')    
+        if auth_header:            
+            parts = auth_header.split()
+            if len(parts) == 2:
+                token = parts[1]
+                token = token   
+        
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json',          
+        }
 
         try:        
             response =  requests.post(api_url, json=payload, headers=headers)   
