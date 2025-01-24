@@ -28,7 +28,6 @@ class UserProfile(models.Model):
     date_of_birth = models.DateField(blank=True, null=True)
     language = models.CharField(max_length=10, blank=True, null=True)
     desc = models.TextField(blank=True, null=True)
-    tenant_id = models.IntegerField(blank=True, null=True)
 
     class Meta:
         db_table = "user_profile"
