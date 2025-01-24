@@ -90,6 +90,8 @@
     "subdomain": "Subdomain",
     "roles": "Roles",
     "role": "Role",
-    "assign_permissions": "Assign Permissions"
+    "assign_permissions": "Assign Permissions",
+    "users": "Users",
+    "user_string": "User"
   }
 }

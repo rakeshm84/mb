@@ -13,17 +13,17 @@ from .serializers import UserSerializer, TenantSerializer, MyTokenObtainPairSeri
 from .models import Tenant, UserProfile, PermissionsMeta, Entity, EntityContentType
 from django.db.models import OuterRef, Subquery, Value, Func, F, JSONField
 
-import logging
-logging.basicConfig(
-    level=logging.DEBUG,  # Set the minimum level of messages to log
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("app.log"),  # Log messages to a file
-        logging.StreamHandler()  # Also print messages to the console
-    ]
-)
+# import logging
+# logging.basicConfig(
+#     level=logging.DEBUG,  # Set the minimum level of messages to log
+#     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+#     handlers=[
+#         logging.FileHandler("app.log"),  # Log messages to a file
+#         logging.StreamHandler()  # Also print messages to the console
+#     ]
+# )
 
-logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
 
 class AuthenticationView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
@@ -209,6 +209,7 @@ class SetAuthentication(APIView):
                 is_superuser = user_data.get('is_superuser', False)
                 is_tenant = user_data.get('is_tenant', False)
                 is_human = is_tenant and user_data.get('entity_type', None) == 'human'
+                parent_tenant_id = user_data.get('parent_tenant_id', False)
                 if platform == 'admin':
                     if is_superuser:
                         return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie,"message": "Cookies set successfully!"}, status=200)
@@ -216,11 +217,15 @@ class SetAuthentication(APIView):
                 elif platform == 'human':
                     if is_human:
                         return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie,"message": "Cookies set successfully!"}, status=200)
+                    elif not is_tenant and parent_tenant_id:
+                        return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "message": "Cookies set successfully!"}, status=200)
                 
                 elif platform == 'ulm':
                     if is_superuser:
                         return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "logged_user": "admin", "message": "Cookies set successfully!"}, status=200)
                     elif is_human:
+                        return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "logged_user": "human", "message": "Cookies set successfully!"}, status=200)
+                    elif not is_tenant and parent_tenant_id:
                         return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "logged_user": "human", "message": "Cookies set successfully!"}, status=200)
             except:
                 None
@@ -579,14 +584,12 @@ class RolesListView(BaseDatatableView):
     searchable_columns = ['id', 'name']
     order_columns = ['id', 'name']
     def get_initial_queryset(self):  
-        logger.info(f"Fetching Roles on ULM")
         group_content_type = ContentType.objects.get_for_model(Group)
 
         tenant_id = 0
         if self.request.auth_user.tenant_id:
             tenant_id = self.request.auth_user.tenant_id
 
-        logger.info(f"Fetching Roles For Tenant Id : {tenant_id}")
         # Filter PermissionsMeta by tenant_id and the Group content type
         permission_meta_records = PermissionsMeta.objects.filter(
             content_type=group_content_type,
@@ -618,7 +621,6 @@ class RolesListView(BaseDatatableView):
         return qs
 
     def prepare_results(self, qs):
-        logger.info(f"Returning Roles to AAM")
         # Format the results to include user_data as a dictionary
         return [
             {
@@ -769,3 +771,155 @@ class CreateEntityAndAssignTable(APIView):
 
         except ContentType.DoesNotExist:
             return JsonResponse({"error": "Invalid model name provided."}, status=400)
+        
+class UsersListView(BaseDatatableView):
+    model = User
+    columns = ['id', 'first_name', 'last_name', 'email', 'is_active', 'date_joined']
+    searchable_columns = ['id', 'first_name', 'last_name', 'email', 'date_joined']
+    order_columns = ['id', 'first_name', 'last_name', 'email', 'is_active', 'date_joined']
+    def get_initial_queryset(self):  
+        tenant_id = 0
+        if self.request.auth_user.tenant_id:
+            tenant_id = self.request.auth_user.tenant_id
+
+        return User.objects.filter(profile__tenant_id=tenant_id)
+
+
+    def filter_queryset(self, qs):    
+        search_value = self.request.GET.get('search[value]', '').strip()
+        if search_value:
+            qs = qs.filter(
+                Q(first_name__icontains=search_value) |   
+                Q(last_name__icontains=search_value) |
+                Q(email__icontains=search_value) |   
+                Q(date_joined__icontains=search_value)    
+            )
+        return qs
+    
+    def ordering(self, qs):
+        order = self.request.GET.get("order[0][column]")
+        direction = self.request.GET.get("order[0][dir]", "asc")
+        
+        if order == "first_name":
+            qs = qs.order_by("first_name" if direction == "asc" else "-first_name")
+        elif order == "last_name":
+            qs = qs.order_by("last_name" if direction == "asc" else "-last_name")
+        elif order == "email":
+            qs = qs.order_by("email" if direction == "asc" else "-email")
+        elif order == "is_active":
+            qs = qs.order_by("is_active" if direction == "asc" else "-is_active")
+        elif order == "date_joined":
+            qs = qs.order_by("date_joined" if direction == "asc" else "-date_joined")
+
+        return qs
+
+    def prepare_results(self, qs):
+        # Format the results to include user_data as a dictionary
+        return [
+            {
+                'id': user.id,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'email': user.email,
+                'is_active': user.is_active,
+                'date_joined': user.date_joined,
+            }
+            for user in qs
+        ]
+    
+class CreateTenantUser(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request, *args, **kwargs):
+        serializer = UserSerializer(data=request.data, context={'bypass_userprofile': True})
+        role_group = request.data.get('role', None)
+        tenant_id = 0
+
+        if request.auth_user.tenant_id:
+            tenant_id = request.auth_user.tenant_id
+
+        if serializer.is_valid():
+            user = serializer.save()
+            if user:
+                try:
+                    group = Group.objects.get(id=role_group)
+                    user.groups.add(group)
+                except Group.DoesNotExist:
+                    return Response({"error": "Invalid group ID."}, status=400)
+                
+                profile, created = UserProfile.objects.update_or_create(
+                    user=user,
+                    defaults={'tenant_id': tenant_id}
+                )
+                return Response(
+                    {'message': 'User created successfully!'},
+                    status=201
+                )
+            else:
+                return Response({'message': 'Something went wrong!'}, status=400)
+        else:
+            return Response(serializer.errors, status=400)
+
+class GroupUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        
+        try:
+            tenant_id = 0
+            tenant_parent_id = 0
+            if hasattr(request.auth_user, 'tenant_id') and request.auth_user.tenant_id:
+                tenant_id = request.auth_user.tenant_id
+
+            if hasattr(request.auth_user, 'tenant_parent_id') and request.auth_user.tenant_parent_id:
+                tenant_parent_id = request.auth_user.tenant_parent_id
+            
+            group_id = id
+            group = Group.objects.filter(id=group_id).first()
+            
+            if not group:
+                return Response({"errors": {"name": "Group not found."}}, status=status.HTTP_404_NOT_FOUND)
+            
+            group_name = request.data.get("name")
+            if group_name:
+                group.name = group_name
+            
+            permission_ids = request.data.get("permissions", [])
+            if permission_ids is not None:                
+                group.permissions.clear()                
+                if permission_ids:
+                    group.permissions.add(*permission_ids)
+            
+            group.save()
+
+            return Response({"success": "Group updated successfully."}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"errors":{"name": str(e)}}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class FetchRoleView(APIView):
+    permission_classes = [AllowAny]
+    def get(self, request, id): 
+        group_id = id
+        return_response = {}
+        group = Group.objects.filter(id=group_id).first()
+       
+        if not group:
+           return Response({"errors": {"name": "Group not found."}}, status=status.HTTP_404_NOT_FOUND)
+       
+        if group:
+           return_response['group'] = {
+            "id": group.id,
+            "name": group.name
+        }
+       
+        perms = group.permissions.all()
+        permissions_list = []
+        for permission in perms:
+           permissions_list.append({
+                "id": permission.id,
+                "name": permission.name
+            })          
+                
+        return_response['permissions'] = permissions_list
+    
+        return Response(return_response, status=status.HTTP_200_OK)

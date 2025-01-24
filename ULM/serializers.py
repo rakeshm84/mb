@@ -143,12 +143,20 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
     def get_token(cls, user):
         token = super().get_token(user)
+        tenant_id = 0
+        if hasattr(user, 'profile'):
+            tenant_id = user.profile.tenant_id
+
         token['username'] = user.username
         token['email'] = user.email
         token['is_superuser'] = user.is_superuser
+        token['parent_tenant_id'] = tenant_id
         token['is_tenant'] = False
-              
-        tenant_data = Tenant.objects.filter(entity_id=user.id).first()
+
+        if tenant_id:
+            tenant_data = Tenant.objects.filter(id=tenant_id).first()
+        else:
+            tenant_data = Tenant.objects.filter(entity_id=user.id).first()
         if tenant_data:
             user_permissions = user.get_all_permissions(tenant_data.id)
             token['is_tenant'] = True
