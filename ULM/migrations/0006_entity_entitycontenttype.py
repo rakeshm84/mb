@@ -7,8 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ULM', '0005_delete_contenttype'),
-        ('contenttypes', '0002_remove_content_type_name'),
+        ('ULM', '0002_products'),
     ]
 
     operations = [
