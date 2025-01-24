@@ -9,7 +9,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 from django.conf import settings
-from .serializers import UserSerializer, TenantSerializer, MyTokenObtainPairSerializer
+from .serializers import UserSerializer, TenantSerializer, MyTokenObtainPairSerializer, UserProfileSerializer
 from .models import Tenant, UserProfile, PermissionsMeta, Entity, EntityContentType
 from django.db.models import OuterRef, Subquery, Value, Func, F, JSONField
 
@@ -239,6 +239,8 @@ class UserEditView(APIView):
         try:
             # Fetch the person object using the id
             user = User.objects.select_related('profile').get(id=id)
+            user_groups = user.groups.first()
+            group = user_groups.id
 
             # Serialize the person data
             serializer = UserSerializer(user)
@@ -246,6 +248,7 @@ class UserEditView(APIView):
 
             user_data = serializer.data
             user_data.profile = profile_serializer.data
+            user_data['role_group'] = group
 
             # Return the serialized data in the response
             return Response({'user': user_data, 'profile': profile_serializer.data}, status=status.HTTP_200_OK)
@@ -923,3 +926,31 @@ class FetchRoleView(APIView):
         return_response['permissions'] = permissions_list
     
         return Response(return_response, status=status.HTTP_200_OK)
+
+class TestFunc(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        # Get ContentType for the Group model
+        group_content_type = ContentType.objects.get_for_model(Group)
+        
+        # Fetch the 'human_admin' group
+        human_admin_group = Group.objects.filter(name='human_admin').first()
+        
+        if human_admin_group:
+            group_id = human_admin_group.id
+            
+            # Filter and delete PermissionsMeta records
+            permission_meta_records = PermissionsMeta.objects.filter(
+                content_type=group_content_type,
+                model_id=group_id
+            )
+            permission_meta_records.delete()  # Deletes all matching records
+            
+            # Delete the group itself
+            human_admin_group.delete()
+            
+            return JsonResponse({"status": "success", "message": "Group and associated permissions deleted successfully."})
+        else:
+            return JsonResponse({"status": "error", "message": "Group not found."})
+

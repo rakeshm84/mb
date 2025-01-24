@@ -80,9 +80,9 @@ def create_new_group_for_tenant_user(tenant):
     user.groups.add(group)
 
 # Signal for Tenant model
-@receiver(post_save, sender=Tenant)
-def tenant_post_save(sender, instance, created, **kwargs):
-    if created:
-        set_tenant(instance.id, instance.parent_id)
-        create_new_group_for_tenant_user(instance)
-        set_tenant(None, None)
+# @receiver(post_save, sender=Tenant)
+# def tenant_post_save(sender, instance, created, **kwargs):
+#     if created:
+#         set_tenant(instance.id, instance.parent_id)
+#         create_new_group_for_tenant_user(instance)
+#         set_tenant(None, None)

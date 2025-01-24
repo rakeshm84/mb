@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import AuthenticationView, UserDetailView, TestView, create_superuser, SetAuthentication, UserEditView, PersonsListView, CreateUser, UpdateUser, ClearAuthentication, RecentRegistrationView, CheckPermission, CreateCustomPermission, RolesListView, PermissionListView, GroupCreateView, CreateEntityAndAssignTable, UsersListView, CreateTenantUser, GroupUpdateView, FetchRoleView
+from .views import AuthenticationView, UserDetailView, TestView, create_superuser, SetAuthentication, UserEditView, PersonsListView, CreateUser, UpdateUser, ClearAuthentication, RecentRegistrationView, CheckPermission, CreateCustomPermission, RolesListView, PermissionListView, GroupCreateView, CreateEntityAndAssignTable, UsersListView, CreateTenantUser, GroupUpdateView, FetchRoleView, TestFunc
 from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
 
 urlpatterns = [
@@ -28,4 +28,5 @@ urlpatterns = [
     path('create-tenant-user/', CreateTenantUser.as_view(), name='create_users'),
     path("update_group/<int:id>/edit/", GroupUpdateView.as_view(), name="create_group"),
     path('get_role/<int:id>/', FetchRoleView.as_view(), name='edit-person'),
+    path('test2/', TestFunc.as_view(), name='test2'),
 ]
