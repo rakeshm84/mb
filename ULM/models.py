@@ -28,6 +28,7 @@ class UserProfile(models.Model):
     date_of_birth = models.DateField(blank=True, null=True)
     language = models.CharField(max_length=10, blank=True, null=True)
     desc = models.TextField(blank=True, null=True)
+    tenant_id = models.IntegerField(blank=True, null=True)
 
     class Meta:
         db_table = "user_profile"
@@ -75,3 +76,18 @@ class Products(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.description} (Price: {self.price})"
+    
+class Entity(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=150)
+
+    class Meta:
+        db_table = "entities"
+
+class EntityContentType(models.Model):
+    id = models.AutoField(primary_key=True)
+    entity_id = models.PositiveIntegerField()
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = "entity_content_type"

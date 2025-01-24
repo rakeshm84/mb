@@ -146,8 +146,10 @@ class RolesListView(APIView):
             'length': length,
         }
 
+        headers = request.headers
+
         try:
-            response = requests.get(api_url, params=params)                          
+            response = requests.get(api_url, params=params, headers=headers)                          
             if response.status_code == 200:
                 data = response.json()                             
                 return JsonResponse(data, status=status.HTTP_200_OK)
@@ -163,9 +165,11 @@ class PermissionListView(APIView):
     def get(self, request):
         ulm_api = settings.ULM_API_URL + "api/"
         api_url = ulm_api + "get-all-permissions/"
+
+        headers = request.headers
         
         try:
-            response = requests.get(api_url)                   
+            response = requests.get(api_url, headers=headers)                   
             return Response(response.json(), status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -175,23 +179,23 @@ class GroupCreateView(APIView):
     def post(self, request):
         """
         Create a new group (without an id).
-        """
+        """    
         ulm_api = settings.ULM_API_URL + "api/"
-        api_url = ulm_api + "create_group/"
-        try:
+        api_url = ulm_api + "create_group/"          
             
-            payload= request.data
-            response =  requests.post(api_url, json=payload)            
-            
-            if(response.status_code == 400):
-                return Response({"errors": "Group name is required."}, status=status.HTTP_400_BAD_REQUEST)
-            elif response.status_code == 409:
-                return Response({"errors": "Group already exists!"}, status=status.HTTP_409_CONFLICT)
-            elif response.status_code == 500:
-                return Response({"errors": "Something went wrong!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
-            if(response.status_code == 201):
-                return Response({"message": "Group created successfully!"}, status=status.HTTP_201_CREATED) 
+        payload= request.data
+        headers = request.headers
 
+        try:        
+            response =  requests.post(api_url, json=payload, headers=headers)   
+            if response.status_code == 201:
+                message_type = "message"
+                message_or_error = response.json().get("success", "Sucessfully created.")
+            else: 
+                message_type = "errors"
+                message_or_error = response.json().get("errors", "Something went wrong!")
+
+        
+            return Response({message_type: message_or_error}, status=response.status_code)
         except Exception as e:
             return Response({"errors": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

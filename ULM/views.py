@@ -10,7 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from django.conf import settings
 from .serializers import UserSerializer, TenantSerializer, MyTokenObtainPairSerializer
-from .models import Tenant, UserProfile, PermissionsMeta
+from .models import Tenant, UserProfile, PermissionsMeta, Entity, EntityContentType
 from django.db.models import OuterRef, Subquery, Value, Func, F, JSONField
 
 class AuthenticationView(TokenObtainPairView):
@@ -566,13 +566,16 @@ class RolesListView(BaseDatatableView):
     columns = ['id', 'name']
     searchable_columns = ['id', 'name']
     order_columns = ['id', 'name']
-    def get_initial_queryset(self):       
+    def get_initial_queryset(self):  
         group_content_type = ContentType.objects.get_for_model(Group)
 
+        tenant_id = 0
+        if self.request.auth_user.tenant_id:
+            tenant_id = self.request.auth_user.tenant_id
         # Filter PermissionsMeta by tenant_id and the Group content type
         permission_meta_records = PermissionsMeta.objects.filter(
             content_type=group_content_type,
-            tenant_id=0
+            tenant_id=tenant_id
         )
 
         # Fetch the corresponding groups using their IDs
@@ -610,22 +613,40 @@ class RolesListView(BaseDatatableView):
         ]
     
 class PermissionListView(APIView):
-    permission_classes = [AllowAny] 
+    permission_classes = [IsAuthenticated] 
 
     def get(self, request):        
-        permission_content_type = ContentType.objects.get_for_model(Permission)
-        permission_meta_records = PermissionsMeta.objects.filter(
-            content_type=permission_content_type,
-            tenant_id=0
-        )
-        perm_ids = permission_meta_records.values_list('model_id', flat=True)
+        tenant_id = 0
+        entity_type = 'admin'
+        if request.auth_user.tenant_id:
+            tenant_id = self.request.auth_user.tenant_id
 
-        permissions = Permission.objects.select_related('content_type').filter(id__in=perm_ids)
+        if request.auth_user.entity_type:
+            entity_type = self.request.auth_user.entity_type
+
+        entity = Entity.objects.filter(name=entity_type).first()
+        entity_id = entity.id
+
+        entity_content_types = EntityContentType.objects.filter(entity_id=entity_id)
+        content_type_ids = entity_content_types.values_list('content_type_id', flat=True)
+
+        # permission_content_type = ContentType.objects.get_for_model(Permission)
+        # permission_meta_records = PermissionsMeta.objects.filter(
+        #     content_type=permission_content_type,
+        #     tenant_id=tenant_id
+        # )
+        # perm_ids = permission_meta_records.values_list('model_id', flat=True)
+
+        # permissions = Permission.objects.select_related('content_type').filter(id__in=perm_ids)
+        permissions = Permission.objects.select_related('content_type').filter(content_type__in=content_type_ids)
         permissions_dict = {}
 
         for perm in permissions:
             permission_array_item = {}
             content_type_name = perm.content_type.model
+            if content_type_name == 'group':
+                content_type_name = 'role'
+
             if content_type_name not in permissions_dict:
                 permissions_dict[content_type_name] = []
             permission_array_item['id'] = perm.id
@@ -642,7 +663,7 @@ class PermissionListView(APIView):
         return JsonResponse(formatted_permissions, safe=False  )
     
 class GroupCreateView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     def post(self, request):
         """
         Create a new group (without an id).
@@ -650,22 +671,85 @@ class GroupCreateView(APIView):
         return self.create_group(request)
 
     def create_group(self, request):
+        from ULM.signals import set_tenant
         try:
+            tenant_id = 0
+            tenant_parent_id = 0
+            if request.auth_user.tenant_id:
+                tenant_id = request.auth_user.tenant_id
+            if request.auth_user.tenant_parent_id:
+                tenant_parent_id = request.auth_user.tenant_parent_id
+
             group_name = request.data.get("name")
             permission_ids = request.data.get('permissions', [])
            
             if not group_name:
                 return Response({"errors": "Group name is required."}, status=status.HTTP_400_BAD_REQUEST)
-           
-            group, created = Group.objects.get_or_create(name=group_name)
+            
+            group_content_type = ContentType.objects.get_for_model(Group)
+            permission_meta_records = PermissionsMeta.objects.filter(
+                content_type=group_content_type,
+                tenant_id=tenant_id
+            )
+            group_ids = []
+            for record in permission_meta_records:
+                group_ids.append(record.model_id)               
+                
+            
+            existing_group_name = Group.objects.filter(id__in=group_ids)                   
+                        
+            group_names = []
+            for group in existing_group_name:
+                group_names.append(group.name.lower())
+            
+            check_group_name = group_name.lower()
+            if check_group_name in group_names:
+                return Response({"errors": {"name": "Group name already exists."}}, status=status.HTTP_400_BAD_REQUEST)
+            
+            set_tenant(tenant_id, tenant_parent_id)
 
-            if permission_ids and created:              
+            group = Group.objects.create(name=group_name)
+
+            if permission_ids and group:              
                 group.permissions.add(*permission_ids)
-           
-            if created:
+
+            set_tenant(None, None)
+            if group:
                 return Response({"message": "Group created successfully!"}, status=status.HTTP_201_CREATED)
             else:
                 return Response({"errors": "Group with this name already exists!"}, status=status.HTTP_409_CONFLICT)
 
         except Exception as e:            
-            return Response({"errors": "An error occurred while creating the group."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"errors": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class CreateEntityAndAssignTable(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        entity = request.POST.get('entity')
+        model_name = request.POST.get('model_name')  # e.g., "user" for the User model
+
+        if not entity or not model_name:
+            return JsonResponse({"error": "Missing required fields (entity, model_name)."}, status=400)
+
+        try:
+            entity, created = Entity.objects.get_or_create(
+                name=entity
+            )
+            if entity:
+                # Get the ContentType for the specified model
+                content_type = ContentType.objects.get(model=model_name)
+
+                # Create the permission
+                entity_content_type, created = EntityContentType.objects.get_or_create(
+                    entity_id=entity.id,
+                    content_type=content_type
+                )
+
+                return JsonResponse({"message": f"Success!"}, status=201)
+            
+            else:
+                return JsonResponse({"message": f"Failed!"}, status=401)
+
+        except ContentType.DoesNotExist:
+            return JsonResponse({"error": "Invalid model name provided."}, status=400)

@@ -26,6 +26,7 @@ class CustomAuthMiddleware:
                     request.auth_user.is_tenant = payload.get("is_tenant", False)
                     request.auth_user.is_superuser = payload.get("is_superuser", False)
                     request.auth_user.tenant_id = payload.get("tenant_id", None)
+                    request.auth_user.tenant_parent_id = payload.get("tenant_parent_id", None)
                     request.auth_user.entity_type = payload.get("entity_type", None)
                           
                 except AuthenticationFailed:
