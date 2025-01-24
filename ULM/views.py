@@ -13,6 +13,18 @@ from .serializers import UserSerializer, TenantSerializer, MyTokenObtainPairSeri
 from .models import Tenant, UserProfile, PermissionsMeta, Entity, EntityContentType
 from django.db.models import OuterRef, Subquery, Value, Func, F, JSONField
 
+import logging
+logging.basicConfig(
+    level=logging.DEBUG,  # Set the minimum level of messages to log
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("app.log"),  # Log messages to a file
+        logging.StreamHandler()  # Also print messages to the console
+    ]
+)
+
+logger = logging.getLogger(__name__)
+
 class AuthenticationView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
@@ -567,11 +579,14 @@ class RolesListView(BaseDatatableView):
     searchable_columns = ['id', 'name']
     order_columns = ['id', 'name']
     def get_initial_queryset(self):  
+        logger.info(f"Fetching Roles on ULM")
         group_content_type = ContentType.objects.get_for_model(Group)
 
         tenant_id = 0
         if self.request.auth_user.tenant_id:
             tenant_id = self.request.auth_user.tenant_id
+
+        logger.info(f"Fetching Roles For Tenant Id : {tenant_id}")
         # Filter PermissionsMeta by tenant_id and the Group content type
         permission_meta_records = PermissionsMeta.objects.filter(
             content_type=group_content_type,
@@ -603,6 +618,7 @@ class RolesListView(BaseDatatableView):
         return qs
 
     def prepare_results(self, qs):
+        logger.info(f"Returning Roles to AAM")
         # Format the results to include user_data as a dictionary
         return [
             {

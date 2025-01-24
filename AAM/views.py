@@ -149,14 +149,17 @@ class RolesListView(APIView):
         headers = request.headers
 
         try:
-            response = requests.get(api_url, params=params, headers=headers)                          
+            logger.info(f"Get roles from ULM on AAM: {api_url}")
+            response = requests.get(api_url, params=params, headers=headers)       
+            logger.info(f"Get roles from ULM Response on AAM: {response.status_code}")                   
             if response.status_code == 200:
                 data = response.json()                             
                 return JsonResponse(data, status=status.HTTP_200_OK)
             else:                
                 return Response({"error": "Failed to fetch data", "status_code": response.status_code}, 
                                 status=status.HTTP_400_BAD_REQUEST)
-        except requests.RequestException as e:           
+        except requests.RequestException as e:       
+            logger.info(f"Get roles Exception on AAM: {str(e)}")    
             return Response({"error": str(e)}, status=status.HTTP_403_FORBIDDEN)
         
 class PermissionListView(APIView):
