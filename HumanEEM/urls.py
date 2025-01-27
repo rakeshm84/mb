@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import TestView, CreateHuman, RolesListView, PermissionListView, GroupCreateView, UsersListView, CreateUser, GroupUpdateView, FetchRoleView, UpdateUser, SetLanguageView, EditProfile
+from .views import TestView, CreateHuman, RolesListView, PermissionListView, GroupCreateView, UsersListView, CreateUser, GroupUpdateView, FetchRoleView, UpdateUser, SetLanguageView, EditProfile, GetPermissions, EditUser
 
 urlpatterns = [
     path('test/', TestView.as_view(), name='test'),
@@ -14,4 +14,6 @@ urlpatterns = [
     path('update-user/<int:id>/edit/', UpdateUser.as_view(), name='update_user'),
     path('set-language/', SetLanguageView.as_view(), name='set-language'),
     path('profile/<int:id>/edit/', EditProfile.as_view(), name='edit_profile'),
+    path('get_user_perms/', GetPermissions.as_view(), name='get_perms'),
+    path('user/<int:id>/edit/', EditUser.as_view(), name='edit_user'),
 ]

@@ -511,4 +511,69 @@ class EditProfile(APIView):
             return JsonResponse(response.json(), status=response.status_code)
         except requests.exceptions.RequestException as e:
             return JsonResponse({"error": "Failed to connect to the API server.", "details": str(e)}, status=503)
+        
+class EditUser(APIView):
 
+    permission_classes = [AllowAny]
+
+    def get(self, request, id, format=None):
+        ulm_api = settings.ULM_API_URL + "api/"
+        api_url = ulm_api + f"person/{id}/edit/"
+        token = ''
+        auth_header = request.headers.get('Authorization')    
+        if auth_header:            
+            parts = auth_header.split()
+            if len(parts) == 2:
+                token = parts[1]
+                token = token
+        
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json',          
+        }
+
+        try:
+            response = requests.get(api_url, headers=headers)
+               
+            if response.status_code == 200:
+                data = response.json()   
+                                         
+                return JsonResponse(data, status=status.HTTP_200_OK)
+            else:                
+                return Response({"error": "Failed to fetch data", "status_code": response.status_code}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+        except requests.RequestException as e:           
+            return Response({"error": str(e)}, status=status.HTTP_403_FORBIDDEN)
+
+
+class GetPermissions(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        ulm_api = settings.ULM_API_URL + "api/"
+        api_url = f"{ulm_api}get_user_perms/"
+        print('api_url', api_url)
+
+        token = ''
+        auth_header = request.headers.get('Authorization')    
+        if auth_header:            
+            parts = auth_header.split()
+            if len(parts) == 2:
+                token = parts[1]
+                token = token   
+        
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json',          
+        }
+
+        try:
+            response = requests.get(api_url, headers=headers)
+            if response.status_code == 200:
+                jsonResponse = response.json()
+                permissions = jsonResponse.get('permissions', [])
+                return JsonResponse({"permissions": permissions}, status=response.status_code)
+            else:
+                return JsonResponse({"error": "Something went wrong"}, status=response.status_code)
+        except requests.exceptions.RequestException as e:
+            return JsonResponse({"error": "Failed to connect to the API server.", "details": str(e)}, status=503)
