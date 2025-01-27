@@ -13,17 +13,20 @@ from .serializers import UserSerializer, TenantSerializer, MyTokenObtainPairSeri
 from .models import Tenant, UserProfile, PermissionsMeta, Entity, EntityContentType
 from django.db.models import OuterRef, Subquery, Value, Func, F, JSONField
 
-# import logging
-# logging.basicConfig(
-#     level=logging.DEBUG,  # Set the minimum level of messages to log
-#     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-#     handlers=[
-#         logging.FileHandler("app.log"),  # Log messages to a file
-#         logging.StreamHandler()  # Also print messages to the console
-#     ]
-# )
+import logging
+import time
+logging.basicConfig(
+    level=logging.INFO,  # Set the minimum level of messages to log
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("app.log"),  # Log messages to a file
+        # logging.StreamHandler()  # Also print messages to the console
+    ]
+)
 
-# logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
+
+enable_logging = settings.ENABLE_APP_LOG
 
 class AuthenticationView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
@@ -239,8 +242,8 @@ class UserEditView(APIView):
         try:
             # Fetch the person object using the id
             user = User.objects.select_related('profile').get(id=id)
-            user_groups = user.groups.first()
-            group = user_groups.id
+            user_group = user.groups.first()
+            group = user_group.id if user_group else None
 
             # Serialize the person data
             serializer = UserSerializer(user)
@@ -254,10 +257,9 @@ class UserEditView(APIView):
             return Response({'user': user_data, 'profile': profile_serializer.data}, status=status.HTTP_200_OK)
 
         except User.DoesNotExist:
-            return Response(
-                {'detail': 'Person not found'}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"message": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"message": "An error occurred.", "error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
     def post(self, request, id, *args, **kwargs):
         user = User.objects.filter(id=id).select_related('profile').first()
@@ -587,6 +589,10 @@ class RolesListView(BaseDatatableView):
     searchable_columns = ['id', 'name']
     order_columns = ['id', 'name']
     def get_initial_queryset(self):  
+        if enable_logging:
+            request_start_time = time.time()
+            logger.info(f"Request Received at ULM RolesListView: {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(request_start_time))}") 
+
         group_content_type = ContentType.objects.get_for_model(Group)
 
         tenant_id = 0
@@ -601,7 +607,15 @@ class RolesListView(BaseDatatableView):
 
         # Fetch the corresponding groups using their IDs
         group_ids = permission_meta_records.values_list('model_id', flat=True)
-        return Group.objects.filter(id__in=group_ids)
+        
+        queryset = Group.objects.filter(id__in=group_ids)
+    
+        if enable_logging:
+            request_end_time = time.time()
+            logger.info(f"Group filter Query executed and results fetched: {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(request_end_time))}")
+            logger.info(f"Time taken to fetch queryset: {request_end_time - request_start_time:.4f} seconds")
+            
+        return queryset
 
     def filter_queryset(self, qs):    
         search_value = self.request.GET.get('search[value]', '').strip()
@@ -625,26 +639,44 @@ class RolesListView(BaseDatatableView):
 
     def prepare_results(self, qs):
         # Format the results to include user_data as a dictionary
-        return [
+     
+        if enable_logging:
+            request_start_time = time.time()
+            logger.info(f"prepare_results method executed time start in ULM RolesListView at: {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(request_start_time))}")
+        
+        data = [
             {
                 'id': group.id,
                 'name': group.name,
             }
             for group in qs
         ]
+        
+        if enable_logging:
+            response_end_time = time.time()          
+            # Log the total time from request start to response send
+            total_time = response_end_time - request_start_time
+            logger.info(f"Total time from request start to response send at ULM RolesListView: {total_time:.4f} seconds")
+        
+        return data
     
 class PermissionListView(APIView):
     permission_classes = [IsAuthenticated] 
 
-    def get(self, request):        
+    def get(self, request):
+        if enable_logging:
+            request_start_time = time.time()
+            logger.info(f"Request Received at ULM PermissionListView: {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(request_start_time))}")
+          
         tenant_id = 0
         entity_type = 'admin'
-        if request.auth_user.tenant_id:
-            tenant_id = self.request.auth_user.tenant_id
+        if hasattr(request.auth_user, 'tenant_id') and request.auth_user.tenant_id:
+            tenant_id = request.auth_user.tenant_id
 
-        if request.auth_user.entity_type:
-            entity_type = self.request.auth_user.entity_type
+        if hasattr(request.auth_user, 'entity_type') and request.auth_user.entity_type:
+            entity_type = request.auth_user.entity_type
 
+        
         entity = Entity.objects.filter(name=entity_type).first()
         entity_id = entity.id
 
@@ -680,6 +712,11 @@ class PermissionListView(APIView):
             formatted_permissions.append({
                 content_type: perms
             })
+        
+        if enable_logging:
+            request_end_time = time.time()                 
+            logger.info(f"Time taken to fetch queryset and return response from PermissionListView in ULM: {request_end_time - request_start_time:.4f} seconds")    
+      
        
         return JsonResponse(formatted_permissions, safe=False  )
     
@@ -688,10 +725,18 @@ class GroupCreateView(APIView):
     def post(self, request):
         """
         Create a new group (without an id).
-        """     
+        """ 
+        if enable_logging:
+            request_start_time = time.time()
+            logger.info(f"Request Received at ULM GroupCreateView: {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(request_start_time))}") 
+            
         return self.create_group(request)
 
     def create_group(self, request):
+        if enable_logging:
+            request_start_time = time.time()
+            logger.info(f"Request Received at create_group method in  GroupCreateView: {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(request_start_time))}")
+            
         from ULM.signals import set_tenant
         try:
             tenant_id = 0
@@ -701,7 +746,7 @@ class GroupCreateView(APIView):
             if request.auth_user.tenant_parent_id:
                 tenant_parent_id = request.auth_user.tenant_parent_id
 
-            group_name = request.data.get("name")
+            group_name = request.data.get("name").strip()
             permission_ids = request.data.get('permissions', [])
            
             if not group_name:
@@ -736,8 +781,15 @@ class GroupCreateView(APIView):
 
             set_tenant(None, None)
             if group:
+                if enable_logging:
+                    request_end_time = time.time()
+                    logger.info(f"Group filter Query executed and filter and create group in ULM GroupCreateView : {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(request_end_time))}")
+                   
+                    logger.info(f"Time taken to create Group in ULM GroupCreateView: {request_end_time - request_start_time:.4f} seconds")
+                
                 return Response({"message": "Group created successfully!"}, status=status.HTTP_201_CREATED)
             else:
+                logger.error(f"Request failed at ULM GroupCreateView: {str(e)}")
                 return Response({"errors": "Group with this name already exists!"}, status=status.HTTP_409_CONFLICT)
 
         except Exception as e:            
@@ -866,7 +918,9 @@ class GroupUpdateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, id):
-        
+        if enable_logging:
+            request_start_time = time.time()
+            logger.info(f"Request Received at ULM GroupUpdateView: {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(request_start_time))}")
         try:
             tenant_id = 0
             tenant_parent_id = 0
@@ -882,19 +936,59 @@ class GroupUpdateView(APIView):
             if not group:
                 return Response({"errors": {"name": "Group not found."}}, status=status.HTTP_404_NOT_FOUND)
             
-            group_name = request.data.get("name")
-            if group_name:
-                group.name = group_name
-            
-            permission_ids = request.data.get("permissions", [])
-            if permission_ids is not None:                
-                group.permissions.clear()                
-                if permission_ids:
-                    group.permissions.add(*permission_ids)
-            
-            group.save()
+            group_name = request.data.get("name").strip()
 
-            return Response({"success": "Group updated successfully."}, status=status.HTTP_200_OK)
+            current_updating_group = group.name
+           
+            if not group_name:
+                return Response({"errors": "Group name is required."}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if group_name:
+                group_content_type = ContentType.objects.get_for_model(Group)
+                permission_meta_records = PermissionsMeta.objects.filter(
+                    content_type=group_content_type,
+                    tenant_id=tenant_id
+                )
+               
+                group_ids = []
+                for record in permission_meta_records:
+                    group_ids.append(record.model_id)               
+                    
+
+                existing_group_name = Group.objects.filter(id__in=group_ids)                   
+                
+                group_names = []
+                for g in existing_group_name:
+                    group_names.append(g.name.lower())
+                
+                check_group_name = group_name.lower()
+                current_updating_group_lower = current_updating_group.lower()
+                
+                if check_group_name in group_names:
+                    if check_group_name == current_updating_group_lower:
+                    # if Group.objects.filter(id=group_id,name__iexact=group_name).exists():  
+                        group.name = group_name
+                    else:
+                        return Response({"errors": {"name": "Group name already exists."}}, status=status.HTTP_400_BAD_REQUEST)
+                else:                    
+                    group.name = group_name
+                 
+                permission_ids = request.data.get("permissions", [])
+                if permission_ids is not None:                
+                    group.permissions.clear()                
+                    if permission_ids:
+                        group.permissions.add(*permission_ids)
+                
+                group.save()
+                
+                if enable_logging:
+                    request_end_time = time.time()
+                    logger.info(f"Group update Query executed and update group in ULM GroupUpdateView : {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(request_end_time))}")
+                   
+                    logger.info(f"Time taken to update Group in ULM GroupUpdateView: {request_end_time - request_start_time:.4f} seconds")
+                
+
+                return Response({"success": "Group updated successfully."}, status=status.HTTP_200_OK)
 
         except Exception as e:
             return Response({"errors":{"name": str(e)}}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -953,4 +1047,91 @@ class TestFunc(APIView):
             return JsonResponse({"status": "success", "message": "Group and associated permissions deleted successfully."})
         else:
             return JsonResponse({"status": "error", "message": "Group not found."})
+        
+class UpdateTenantUser(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id, *args, **kwargs):
+        user = User.objects.filter(id=id).select_related('profile').first()
+
+        if not user:
+            return Response({"message": "Person not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Update user fields
+        user.first_name = request.data.get('first_name', user.first_name)
+        user.last_name = request.data.get('last_name', user.last_name)
+        user.email = request.data.get('email', user.email)
+
+        # Update profile fields if they exist
+        if hasattr(user, 'profile'):
+            user.profile.phone_number = request.data.get('phone_number', user.profile.phone_number)
+            user.profile.address = request.data.get('address', user.profile.address)
+            user.profile.date_of_birth = request.data.get('date_of_birth', user.profile.date_of_birth)
+            user.profile.save()
+        else:
+            # If no profile exists, create one
+            user.profile = UserProfile.objects.create(
+                user=user,
+                phone_number=request.data.get('phone_number'),
+                address=request.data.get('address'),
+                date_of_birth=request.data.get('date_of_birth'),
+            )
+            user.profile.save()
+
+        user.save()
+
+        # Update user group (auth_group)
+        role_group = request.data.get('role', None)
+        if role_group:
+            try:
+                group = Group.objects.get(id=role_group)
+                user.groups.set([group])  # Use `set` to set a single group (if necessary)
+            except Group.DoesNotExist:
+                return Response({"message": "Group does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Prepare the response data
+        userData = {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            # 'role_group': user.groups,
+        }
+
+        if hasattr(user, 'profile'):
+            userData.update({
+                'phone': user.profile.phone_number,
+                'address': user.profile.address,
+                'dob': user.profile.date_of_birth,
+                'lang': user.profile.language,
+            })
+
+        return Response({"message": "Updated successfully", "user": userData}, status=status.HTTP_200_OK)
+class SetLanguageView(APIView): 
+    permission_classes = [IsAuthenticated]  
+
+    def post(self, request):
+        selected_language = request.data.get("language")     
+        try:
+            # updated_count = UserProfile.objects.filter(user=request.user.user_id).update(language=selected_language)
+            user_profile, created = UserProfile.objects.get_or_create(user=request.auth_user)
+            user_profile.language = selected_language
+            updated = user_profile.save()
+            
+            if updated == 0:
+                return Response(
+                    {"error": "No user profile found to update."},
+                    status=status.HTTP_404_NOT_FOUND
+            )
+            
+            return Response(
+                {"success": "Language updated successfully."},
+                status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 

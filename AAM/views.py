@@ -11,12 +11,14 @@ from django.db.models import Q
 from django_datatables_view.base_datatable_view import BaseDatatableView
 
 import logging
+import time
 logging.basicConfig(
-    level=logging.DEBUG,  # Set the minimum level of messages to log
+    # level=logging.DEBUG,  # Set the minimum level of messages to log
+    level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler("app.log"),  # Log messages to a file
-        logging.StreamHandler()  # Also print messages to the console
+        # logging.StreamHandler()  # Also print messages to the console
     ]
 )
 
@@ -47,9 +49,9 @@ class Create(APIView):
                 human_api_url = settings.HEEM_API_URL + "api/create/"
                 human_payload = { "db_name": data['db_name'] }
                 res = requests.post(human_api_url, json=human_payload)
-                logger.info(f"human_api_url {human_api_url}")
+                # logger.info(f"human_api_url {human_api_url}")
                 if res.status_code == 201:
-                    logger.info(f"human_api_url res.status_code {res.status_code}")
+                    # logger.info(f"human_api_url res.status_code {res.status_code}")
                     jsonRes = res.json()
                     if jsonRes.get('success') == True:
                         update_res = requests.post(f"{ulm_api}update/{ulm_tenant_id}", json={"status": 1})
@@ -68,6 +70,20 @@ class Create(APIView):
                 "response": response.json() if response.headers.get('Content-Type', '').startswith('application/json') else response.text
             })
 
+        except requests.exceptions.RequestException as e:
+            return JsonResponse({"error": "Failed to connect to the API server.", "details": str(e)}, status=503)
+        
+class PersonsEditView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, id, *args, **kwargs):
+        ulm_api = settings.ULM_API_URL + "api/"
+        api_url = f"{ulm_api}person/{id}/edit/"
+        payload = request.data
+        auth_header = {'Authorization': request.headers.get('Authorization')}
+        try:
+            response = requests.post(api_url, json=payload, headers=auth_header)
+            return JsonResponse(response.json(), status=response.status_code)
         except requests.exceptions.RequestException as e:
             return JsonResponse({"error": "Failed to connect to the API server.", "details": str(e)}, status=503)
 
@@ -161,9 +177,9 @@ class RolesListView(APIView):
         }
 
         try:
-            logger.info(f"Get roles from ULM on AAM: {api_url}")
+            # logger.info(f"Get roles from ULM on AAM: {api_url}")
             response = requests.get(api_url, params=params, headers=headers)       
-            logger.info(f"Get roles from ULM Response on AAM: {response.status_code}")                   
+            # logger.info(f"Get roles from ULM Response on AAM: {response.status_code}")                   
             if response.status_code == 200:
                 data = response.json()                             
                 return JsonResponse(data, status=status.HTTP_200_OK)
@@ -171,7 +187,7 @@ class RolesListView(APIView):
                 return Response({"error": "Failed to fetch data", "status_code": response.status_code}, 
                                 status=status.HTTP_400_BAD_REQUEST)
         except requests.RequestException as e:       
-            logger.info(f"Get roles Exception on AAM: {str(e)}")    
+            # logger.info(f"Get roles Exception on AAM: {str(e)}")    
             return Response({"error": str(e)}, status=status.HTTP_403_FORBIDDEN)
         
 class PermissionListView(APIView):
@@ -196,7 +212,7 @@ class PermissionListView(APIView):
         }
         
         try:
-            response = requests.get(api_url, headers=headers)                   
+            response = requests.get(api_url, headers=headers)   
             return Response(response.json(), status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -304,3 +320,62 @@ class FetchRoleView(APIView):
                                 status=status.HTTP_400_BAD_REQUEST)
         except requests.RequestException as e:           
             return Response({"error": str(e)}, status=status.HTTP_403_FORBIDDEN)
+        
+class SetLanguageView(APIView): 
+    permission_classes = [IsAuthenticated]  
+
+    def post(self, request):     
+        selected_language = request.data.get("language")        
+        supported_languages = settings.SUPPORTED_LANGUAGES
+        if selected_language not in supported_languages:
+            return Response(
+                {"error": "Unsupported language."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        token = ''
+        auth_header = request.headers.get('Authorization')    
+        if auth_header:            
+            parts = auth_header.split()
+            if len(parts) == 2:
+                token = parts[1]
+                token = token   
+        
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json',          
+        }
+        try:
+            ulm_api = settings.ULM_API_URL + "api/"
+            api_url = ulm_api + "set-language/" 
+            params = {
+                'selected_language': selected_language
+            }
+            response = requests.post(api_url, params=params, headers=headers)  
+            
+            if response.status_code == 200:
+                data = response.json()
+                return JsonResponse(data, status=status.HTTP_200_OK)
+            else:
+                data = response.json()
+                return JsonResponse(data, status=status.HTTP_403_FORBIDDEN)
+
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+class EditProfile(APIView):
+
+    permission_classes = [AllowAny]
+
+    def post(self, request, id, *args, **kwargs):
+        ulm_api = settings.ULM_API_URL + "api/"
+        api_url = f"{ulm_api}person/{id}/edit/"
+        payload = request.data
+        auth_header = {'Authorization': request.headers.get('Authorization')}
+        try:
+            response = requests.post(api_url, json=payload, headers=auth_header)
+            return JsonResponse(response.json(), status=response.status_code)
+        except requests.exceptions.RequestException as e:
+            return JsonResponse({"error": "Failed to connect to the API server.", "details": str(e)}, status=503)

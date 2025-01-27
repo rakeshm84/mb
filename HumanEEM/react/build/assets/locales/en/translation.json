@@ -24,8 +24,13 @@
       "add_new": "Add new",
       "submit": "Submit",
       "update": "Update",
+      "edit": "Edit",
       "add_new_tenant": "Add new tenant",
-      "add_role": "Add Role"
+      "add_role": "Add Role",
+      "action": "Action",
+      "back": "Back",
+      "search": "Search",
+      "cancel": "Cancel"
     },
     "logout": "Logout",
 
@@ -55,7 +60,8 @@
       "last_name_not_valid": "Only letters are allowed",
       "username": {
         "required": "Username is required",
-        "not_unique": "This username is already in use. Please choose another one."
+        "not_unique": "This username is already in use. Please choose another one.",
+        "space_not_allowed": "Space is not allowed in username."
       },
       "email": {
         "required": "Email is required",
@@ -76,7 +82,9 @@
         "mismatch": "Passwords do not match"
       },
       "db_name_required": "Database name is required",
-      "username_required": "Username is required"
+      "username_required": "Username is required",
+      "subdomain_exists": "Subdomain already exists",
+      "subdomain_length": "Subdomain must be between 3 and 63 characters long."
     },
     "persons": "Persons",
     "person": "Person",
@@ -92,6 +100,17 @@
     "role": "Role",
     "assign_permissions": "Assign Permissions",
     "users": "Users",
-    "user_string": "User"
+    "user_string": "User",
+    "hash_id": "#ID",
+    "name": "Name",
+    "email": "Email",
+    "domain": "Domain",
+    "status": "Status",
+    "created": "Created",
+    "edit_role": "Edit Role",
+    "profile_information": "Profile Information",
+    "mobile": "Mobile",
+    "edit_user": "Edit User",
+    "add_new_user": "Add New User"
   }
 }

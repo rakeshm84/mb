@@ -8,6 +8,22 @@ from django.conf import settings
 import requests
 from django.http import JsonResponse
 
+
+import logging
+import time
+logging.basicConfig(
+    # level=logging.DEBUG,  # Set the minimum level of messages to log
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("app.log"),  # Log messages to a file
+        # logging.StreamHandler()  # Also print messages to the console
+    ]
+)
+logger = logging.getLogger(__name__)
+
+enable_logging = settings.ENABLE_APP_LOG
+
 # Create your views here.
 class TestView(APIView):
     permission_classes = [AllowAny]
@@ -35,6 +51,12 @@ class RolesListView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
+        
+        
+        if enable_logging:
+            request_start_time = time.time()
+            logger.info(f"Request Received at HumanEEM RolesListView: {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(request_start_time))}")
+        
         ulm_api = settings.ULM_API_URL + "api/"
         api_url = ulm_api + "get_roles/"
 
@@ -49,7 +71,7 @@ class RolesListView(APIView):
             'order[0][column]': order_column,
             'order[0][dir]': order_dir,
             'start': start,
-            'length': length,
+            'length': length
         }
 
         # headers = request.headers
@@ -67,20 +89,44 @@ class RolesListView(APIView):
         }
 
         try:
-            response = requests.get(api_url, params=params, headers=headers)                          
-            if response.status_code == 200:
-                data = response.json()                             
+            if enable_logging:
+                request_forward_time = time.time()
+                logger.info(f"Request forward to ULM from HumanEEM RolesListView: {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(request_forward_time))}")
+                
+            response = requests.get(api_url, params=params, headers=headers)  
+            
+            if enable_logging:
+                request_processing_time = time.time() - request_forward_time
+                logger.info(f"Response received from ULM to HumanEEM View: {request_processing_time:.4f} seconds")
+                                        
+            if response.status_code == 200:                
+                data = response.json()  
+                
+                if enable_logging: 
+                    response_time = time.time()
+                    logger.info(f"Response sent at: {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(response_time))}")
+                    # Log total request processing time
+                    logger.info(f"Total time from request start at HumanEEM RolesListView to response send: {response_time - request_start_time:.4f} seconds")   
+                                           
                 return JsonResponse(data, status=status.HTTP_200_OK)
             else:                
                 return Response({"error": "Failed to fetch data", "status_code": response.status_code}, 
                                 status=status.HTTP_400_BAD_REQUEST)
-        except requests.RequestException as e:           
+        except requests.RequestException as e:
+            if enable_logging:
+                logger.error(f"Request to ULM API failed: {str(e)}")
+                           
             return Response({"error": str(e)}, status=status.HTTP_403_FORBIDDEN)
         
 class PermissionListView(APIView):
     permission_classes = [AllowAny] 
 
     def get(self, request):
+                
+        if enable_logging:
+            request_start_time = time.time()
+            logger.info(f"Request Received at HumanEEM PermissionListView: {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(request_start_time))}")
+        
         ulm_api = settings.ULM_API_URL + "api/"
         api_url = ulm_api + "get-all-permissions/"
 
@@ -99,7 +145,23 @@ class PermissionListView(APIView):
         }
         
         try:
-            response = requests.get(api_url, headers=headers)                   
+            if enable_logging:
+                request_forward_time = time.time()
+                logger.info(f"Request forward to ULM from HumanEEM PermissionListView: {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(request_forward_time))}")
+                
+            response = requests.get(api_url, headers=headers)  
+            
+            if enable_logging:
+                request_processing_time = time.time() - request_forward_time
+                logger.info(f"Response received from ULM to HumanEEM PermissionListView: {request_processing_time:.4f} seconds")
+                
+            if enable_logging: 
+                response_time = time.time()
+                logger.info(f"Response sent at: {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(response_time))}")
+                # Log total request processing time
+                logger.info(f"Total time from request start at HumanEEM PermissionListView to response send: {response_time - request_start_time:.4f} seconds")    
+                
+                             
             return Response(response.json(), status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -110,7 +172,14 @@ class GroupCreateView(APIView):
     def post(self, request):
         """
         Create a new group (without an id).
-        """    
+        """  
+        
+        if enable_logging:
+            request_start_time = time.time()
+            logger.info(f"Request Received at HumanEEM GroupCreateView: {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(request_start_time))}")  
+        
+        
+        
         ulm_api = settings.ULM_API_URL + "api/"
         api_url = ulm_api + "create_group/"          
             
@@ -129,18 +198,34 @@ class GroupCreateView(APIView):
             'Content-Type': 'application/json',          
         }
 
-        try:        
+        try:
+            if enable_logging:
+                request_forward_time = time.time()
+                logger.info(f"Request forward to ULM from HumanEEM GroupCreateView: {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(request_forward_time))}") 
+                       
             response =  requests.post(api_url, json=payload, headers=headers)   
-            if response.status_code == 201:
+            
+            if enable_logging:
+                request_processing_time = time.time() - request_forward_time
+                logger.info(f"Response received from ULM to HumanEEM GroupCreateView: {request_processing_time:.4f} seconds")
+                
+            if response.status_code == 201:                  
                 message_type = "message"
                 message_or_error = response.json().get("success", "Sucessfully created.")
             else: 
                 message_type = "errors"
                 message_or_error = response.json().get("errors", "Something went wrong!")
-
+                
+            if enable_logging: 
+                    response_time = time.time()
+                    logger.info(f"Response sent at: {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(response_time))}")
+                    # Log total request processing time
+                    logger.info(f"Total time from request start to response send: {response_time - request_start_time:.4f} seconds")    
         
             return Response({message_type: message_or_error}, status=response.status_code)
         except Exception as e:
+            if enable_logging:
+                logger.error(f"Request to ULM API failed at HumanEEM GroupCreateView: {str(e)}")
             return Response({"errors": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 class UsersListView(APIView):
@@ -221,6 +306,11 @@ class GroupUpdateView(APIView):
 
     def post(self, request, id):
         
+        if enable_logging:
+            request_start_time = time.time()
+            logger.info(f"Request Received at HumanEEM GroupUpdateView: {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(request_start_time))}") 
+        
+        
         ulm_api = settings.ULM_API_URL + "api/"
         api_url = f"{ulm_api}update_group/{id}/edit/"
 
@@ -239,7 +329,15 @@ class GroupUpdateView(APIView):
             'Content-Type': 'application/json',          
         }
 
+        if enable_logging:
+                request_froward_time = time.time()
+                logger.info(f"Request forward to ULM from HumanEEM GroupUpdateView: {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(request_froward_time))}")
+                
         response = requests.post(api_url, json=payload, headers=headers)
+        
+        if enable_logging:
+            request_processing_time = time.time() - request_froward_time
+            logger.info(f"Response received from ULM to HumanEEM GroupUpdateView: {request_processing_time:.4f} seconds")
 
         if response.status_code == 200:
             message_type = "message"
@@ -247,6 +345,12 @@ class GroupUpdateView(APIView):
         else:
             message_type = "errors"
             message_or_error = response.json().get("errors", "Something went wrong!")
+            
+        if enable_logging: 
+            response_time = time.time()
+            logger.info(f"Response sent at: {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(response_time))}")
+            # Log total request processing time
+            logger.info(f"Total time from request start at GroupUpdateView to response send: {response_time - request_start_time:.4f} seconds")   
 
         return Response({message_type: message_or_error}, status=response.status_code)
     
@@ -281,3 +385,130 @@ class FetchRoleView(APIView):
                                 status=status.HTTP_400_BAD_REQUEST)
         except requests.RequestException as e:           
             return Response({"error": str(e)}, status=status.HTTP_403_FORBIDDEN)
+        
+class UpdateUser(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, id, *args, **kwargs):
+        ulm_api = settings.ULM_API_URL + "api/"
+        api_url = f"{ulm_api}user/{id}/edit/"
+        payload = request.data
+        token = ''
+        auth_header = request.headers.get('Authorization')    
+        if auth_header:            
+            parts = auth_header.split()
+            if len(parts) == 2:
+                token = parts[1]
+                token = token   
+        
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json',          
+        }
+        try:
+            response = requests.post(api_url, json=payload, headers=headers)
+            return JsonResponse(response.json(), status=response.status_code)
+        except requests.exceptions.RequestException as e:
+            return JsonResponse({"error": "Failed to connect to the API server.", "details": str(e)}, status=503)
+        
+class SetLanguageView(APIView): 
+    permission_classes = [IsAuthenticated]  
+
+    def post(self, request):     
+        selected_language = request.data.get("language")        
+        supported_languages = settings.SUPPORTED_LANGUAGES
+        if selected_language not in supported_languages:
+            return Response(
+                {"error": "Unsupported language."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        token = ''
+        auth_header = request.headers.get('Authorization')    
+        if auth_header:            
+            parts = auth_header.split()
+            if len(parts) == 2:
+                token = parts[1]
+                token = token   
+        
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json',          
+        }
+        try:
+            ulm_api = settings.ULM_API_URL + "api/"
+            api_url = ulm_api + "set-language/" 
+            params = {
+                'selected_language': selected_language
+            }
+            response = requests.post(api_url, params=params, headers=headers)  
+            
+            if response.status_code == 200:
+                data = response.json()
+                return JsonResponse(data, status=status.HTTP_200_OK)
+            else:
+                data = response.json()
+                return JsonResponse(data, status=status.HTTP_403_FORBIDDEN)
+
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+class EditTenantUser(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, id, format=None):
+        ulm_api = settings.ULM_API_URL + "api/"
+        api_url = ulm_api + f"person/{id}/edit/"
+        token = ''
+        auth_header = request.headers.get('Authorization')    
+        if auth_header:            
+            parts = auth_header.split()
+            if len(parts) == 2:
+                token = parts[1]
+                token = token   
+        
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json',          
+        }
+
+        try:
+            response = requests.get(api_url, headers=headers)
+               
+            if response.status_code == 200:
+                data = response.json()   
+                                         
+                return JsonResponse(data, status=status.HTTP_200_OK)
+            else:                
+                return Response({"error": "Failed to fetch data", "status_code": response.status_code}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+        except requests.RequestException as e:           
+            return Response({"error": str(e)}, status=status.HTTP_403_FORBIDDEN)
+
+class EditProfile(APIView):
+    permission_classes= [IsAuthenticated]
+
+    def post(self, request, id, *args, **kwargs):
+        ulm_api = settings.ULM_API_URL + "api/"
+        api_url = f"{ulm_api}person/{id}/edit/"
+        payload = request.data
+        token = ''
+        auth_header = request.headers.get('Authorization')    
+        if auth_header:            
+            parts = auth_header.split()
+            if len(parts) == 2:
+                token = parts[1]
+                token = token   
+        
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json',          
+        }
+        try:
+            response = requests.post(api_url, json=payload, headers=headers)
+            return JsonResponse(response.json(), status=response.status_code)
+        except requests.exceptions.RequestException as e:
+            return JsonResponse({"error": "Failed to connect to the API server.", "details": str(e)}, status=503)
+

@@ -23,7 +23,14 @@
       "logout": "התנתקות",
       "add_new": "הוסף חדש",
       "submit": "שלח",
-      "add_new_tenant": "הוסף שוכר חדש"
+      "update": "לְעַדְכֵּן",
+      "edit": "לַעֲרוֹך",
+      "add_new_tenant": "הוסף שוכר חדש",
+      "add_role": "הוסף תפקיד",
+      "action": "פְּעוּלָה",
+      "back": "בְּחֲזָרָה",
+      "search": "לְחַפֵּשׂ",
+      "cancel": "לְבַטֵל"
     },
     "logout": "התנתקות",
     "table": "טבלה",
@@ -45,6 +52,7 @@
       "mode": "בהיר / כהה"
     },
     "validations": { 
+      "required": "{{field}} נדרש",
       "first_name_required": "שם פרטי נדרש",
       "first_name_not_valid": "רק אותיות מותרות",
       "last_name_required": "שם משפחה נדרש",
@@ -86,6 +94,18 @@
     "date_of_birth": "תַאֲרִיך לֵידָה",
     "description": "תֵאוּר",
     "businesses": "עסקים",
-    "subdomain": "דומיין משנה"
+    "subdomain": "דומיין משנה",
+    "roles": "תפקידים",
+    "role": "תַפְקִיד",
+    "assign_permissions": "הקצה הרשאות",
+    "hash_id": "#ID",
+    "name": "שֵׁם",
+    "email": "אֶלֶקטרוֹנִי",
+    "domain": "תְחוּם",
+    "status": "סטָטוּס",
+    "created": "נוצר",
+    "edit_role": "ערוך תפקיד",
+    "profile_information": "מידע על פרופיל",
+    "mobile": "נייד"
   }
 }

@@ -24,8 +24,13 @@
       "add_new": "Add new",
       "submit": "Submit",
       "update": "Update",
+      "edit": "Edit",
       "add_new_tenant": "Add new tenant",
-      "add_role": "Add Role"
+      "add_role": "Add Role",
+      "action": "Action",
+      "back": "Back",
+      "search": "Search",
+      "cancel": "Cancel"
     },
     "logout": "Logout",
 
@@ -93,6 +98,15 @@
     "subdomain": "Subdomain",
     "roles": "Roles",
     "role": "Role",
-    "assign_permissions": "Assign Permissions"
+    "assign_permissions": "Assign Permissions",
+    "hash_id": "#ID",
+    "name": "Name",
+    "email": "Email",
+    "domain": "Domain",
+    "status": "Status",
+    "created": "Created",
+    "edit_role": "Edit Role",
+    "profile_information": "Profile Information",
+    "mobile": "Mobile"
   }
 }
