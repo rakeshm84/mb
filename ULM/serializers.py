@@ -99,7 +99,6 @@ class UserSerializer(serializers.ModelSerializer):
             address=validated_data.get('address', None),
             date_of_birth=validated_data.get('dob', None),
             language='en',
-            is_admin=validated_data.get('is_admin', False),
         )
 
         return user
