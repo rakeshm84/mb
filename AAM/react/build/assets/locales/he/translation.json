@@ -106,6 +106,9 @@
     "created": "נוצר",
     "edit_role": "ערוך תפקיד",
     "profile_information": "מידע על פרופיל",
-    "mobile": "נייד"
+    "mobile": "נייד",
+    "humans": "בני אדם",
+    "human": "אֶנוֹשִׁי",
+    "add_new_human": "הוסף אדם חדש"
   }
 }

@@ -30,7 +30,8 @@
       "action": "Action",
       "back": "Back",
       "search": "Search",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "delete": "Delete"
     },
     "logout": "Logout",
 

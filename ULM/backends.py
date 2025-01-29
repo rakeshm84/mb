@@ -45,7 +45,7 @@ def get_tenant_user_permissions(user, tenant_id):
 
     user_permissions = Permission.objects.filter(id__in=permission_ids, user=user)
 
-    return {f"{perm.content_type.app_label}.{perm.codename}" for perm in user_permissions}
+    return {f"{perm.content_type.model}.{perm.codename}" for perm in user_permissions}
 
 def get_tenant_group_permissions(user, tenant_id):
     """
@@ -66,4 +66,4 @@ def get_tenant_group_permissions(user, tenant_id):
         group__user=user
     )
 
-    return {f"{perm.content_type.app_label}.{perm.codename}" for perm in group_permissions}
+    return {f"{perm.content_type.model}.{perm.codename}" for perm in group_permissions}

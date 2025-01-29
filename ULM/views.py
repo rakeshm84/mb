@@ -10,8 +10,10 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from django.conf import settings
 from .serializers import UserSerializer, TenantSerializer, MyTokenObtainPairSerializer, UserProfileSerializer
-from .models import Tenant, UserProfile, PermissionsMeta, Entity, EntityContentType
+from .models import Tenant, UserProfile, PermissionsMeta, Entity, EntityContentType, TenantUser
 from django.db.models import OuterRef, Subquery, Value, Func, F, JSONField
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
+from django.http import HttpRequest
 
 import logging
 import time
@@ -113,12 +115,15 @@ class UserDetailView(APIView):
     def get(self, request):
         request_data = request.user  # Retrieve the authenticated user
         user = User.objects.select_related('profile').filter(id=request_data.id).first()
+        auth_user = request.auth_user
+
         user_data = {
             "id": user.id,
             "username": user.username,
             "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
+            "is_admin": auth_user.is_admin
         }
         if hasattr(user, 'profile'):
             user_data.update({
@@ -128,6 +133,9 @@ class UserDetailView(APIView):
                 'lang': user.profile.language,
                 'desc': user.profile.desc,
             })
+
+        # user_data.update({"is_admin": user.is_admin_user()})
+
         return Response(user_data, status=status.HTTP_200_OK)
 
 # Create your views here.
@@ -195,45 +203,173 @@ class SetAuthentication(APIView):
         )
         
         return response
+    
+    def get_new_access_token(self, refresh_token):
+        import requests
+        
+        ulm_api = settings.ULM_API_URL + "api/"
+        api_url = ulm_api + "authentication/refresh/"
+        params = {
+            'refresh': refresh_token
+        }
+        try:
+            response = requests.post(api_url, params)
+            return response.json()  
+            # return response_content.get('access')
+        except Exception as e:
+            return None
+    
+    def get_subdomain(self, request):
+        host = request.get_host()
+        subdomain = host.split('.')[0]
+        return subdomain
 
 
     def get(self, request):       
-        from rest_framework_simplejwt.tokens import AccessToken 
         auth_cookie = request.COOKIES.get('auth_token')
         refresh_cookie = request.COOKIES.get('refresh_token')
-        
-        if auth_cookie:
-            platform = request.GET.get('platform')
 
-            try:
-                access_token = AccessToken(auth_cookie)
-                user_data = access_token.payload
+        response = JsonResponse({"error": "Cookies not found!"}, status=401)
+        if not auth_cookie:
+            return response
+        
+        try:
+            access_token = AccessToken(auth_cookie)
+        except Exception as e:
+            # If access token is invalid or expired, try refreshing
+            if not refresh_cookie:
+                return response
             
-                is_superuser = user_data.get('is_superuser', False)
+            try:
+                # Attempt to refresh the access token
+                refresh_token = RefreshToken(refresh_cookie)
+                new_token = self.get_new_access_token(refresh_token)
+                access = new_token.get('access')
+                refresh = new_token.get('refresh')
+                response.set_cookie(
+                    'auth_token', access,
+                    max_age=86400,                        
+                    httponly=True,                     
+                    secure=True,                      
+                    samesite='None'
+                )
+                response.set_cookie(
+                    'refresh_token', 
+                    refresh,
+                    max_age=86400,
+                    httponly=True,                     
+                    secure=True,                      
+                    samesite='None'
+                )
+                access_token = AccessToken(access)
+
+            except Exception as refresh_error:
+                # If the refresh token is also invalid/expired
+                return JsonResponse({"error": "Invalid or expired tokens!"}, status=401)
+        if access_token:
+            from .serializers import RefreshTokenObtainPairOnDomainShift
+            platform = request.GET.get('platform')
+            try:
+                # access_token = AccessToken(auth_cookie)
+                user_data = access_token.payload
+
+                user_id = user_data.get('user_id')
+
+                user = User.objects.filter(id=user_id).first()
+                
+                is_superuser = user.is_superuser
                 is_tenant = user_data.get('is_tenant', False)
                 is_human = is_tenant and user_data.get('entity_type', None) == 'human'
                 parent_tenant_id = user_data.get('parent_tenant_id', False)
+                permissions = user_data.get("permissions", [])
                 if platform == 'admin':
                     if is_superuser:
                         return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie,"message": "Cookies set successfully!"}, status=200)
+                    else:
+                        tenant_user = TenantUser.objects.filter(user_id=user_id, tenant_id=0).exists()
+                        
+                        if tenant_user:
+                            ref_token = RefreshTokenObtainPairOnDomainShift.get_token(user, 0)
+                            if ref_token:
+                                refresh = ref_token
+                                new_access = str(refresh.access_token)
+                                new_refresh = str(refresh)
+                                access_token = AccessToken(new_access)
+                                payload = access_token.payload
+                                permissions = payload.get("permissions", [])
+
+                                new_access = str(refresh.access_token)
+                                new_refresh = str(refresh)
+                                return JsonResponse({"auth_token":new_access , "refresh_token":new_refresh, "permissions": permissions, "message": "Cookies set successfully!"}, status=200)
                     
                 elif platform == 'human':
+                    subdomain = request.GET.get('subdomain')
+                    tenant = Tenant.objects.filter(subdomain=subdomain).first()
+                    if tenant:
+                        ref_token = RefreshTokenObtainPairOnDomainShift.get_token(user, tenant.id)
+                        if ref_token:
+                                refresh = ref_token
+                                new_access = str(refresh.access_token)
+                                new_refresh = str(refresh)
+                                access_token = AccessToken(new_access)
+                                payload = access_token.payload
+                                permissions = payload.get("permissions", [])
+
+                                new_access = str(refresh.access_token)
+                                new_refresh = str(refresh)
+                                return JsonResponse({"auth_token":new_access , "refresh_token":new_refresh, "permissions": permissions, "message": "Cookies set successfully!"}, status=200)
                     if is_human:
-                        return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie,"message": "Cookies set successfully!"}, status=200)
+                        return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "permissions": permissions, "message": "Cookies set successfully!"}, status=200)
                     elif not is_tenant and parent_tenant_id:
-                        return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "message": "Cookies set successfully!"}, status=200)
+                        return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "permissions": permissions,  "message": "Cookies set successfully!"}, status=200)
                 
                 elif platform == 'ulm':
-                    if is_superuser:
-                        return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "logged_user": "admin", "message": "Cookies set successfully!"}, status=200)
-                    elif is_human:
-                        return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "logged_user": "human", "message": "Cookies set successfully!"}, status=200)
-                    elif not is_tenant and parent_tenant_id:
-                        return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "logged_user": "human", "message": "Cookies set successfully!"}, status=200)
-            except:
+                    return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "permissions": permissions, "message": "Cookies set successfully!"}, status=200)
+                    # if is_superuser:
+                    #     return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "permissions": permissions,  "logged_user": "admin", "message": "Cookies set successfully!"}, status=200)
+                    # elif is_human:
+                    #     return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "permissions": permissions,  "logged_user": "human", "message": "Cookies set successfully!"}, status=200)
+                    # elif not is_tenant and parent_tenant_id:
+                    #     return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "permissions": permissions,  "logged_user": "human", "message": "Cookies set successfully!"}, status=200)
+            except Exception as e:
+                print('e', set(e))
                 None
-
         return JsonResponse({"error": "Cookies not found!", "status": False}, status=401)
+    
+        # if auth_cookie:
+        #     platform = request.GET.get('platform')
+
+        #     try:
+        #         access_token = AccessToken(auth_cookie)
+        #         user_data = access_token.payload
+            
+        #         is_superuser = user_data.get('is_superuser', False)
+        #         is_tenant = user_data.get('is_tenant', False)
+        #         is_human = is_tenant and user_data.get('entity_type', None) == 'human'
+        #         parent_tenant_id = user_data.get('parent_tenant_id', False)
+        #         permissions = user_data.get("permissions", [])
+        #         if platform == 'admin':
+        #             if is_superuser:
+        #                 return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie,"message": "Cookies set successfully!"}, status=200)
+                    
+        #         elif platform == 'human':
+        #             if is_human:
+        #                 return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "permissions": permissions, "message": "Cookies set successfully!"}, status=200)
+        #             elif not is_tenant and parent_tenant_id:
+        #                 return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "permissions": permissions,  "message": "Cookies set successfully!"}, status=200)
+                
+        #         elif platform == 'ulm':
+        #             return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "permissions": permissions, "message": "Cookies set successfully!"}, status=200)
+        #             # if is_superuser:
+        #             #     return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "permissions": permissions,  "logged_user": "admin", "message": "Cookies set successfully!"}, status=200)
+        #             # elif is_human:
+        #             #     return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "permissions": permissions,  "logged_user": "human", "message": "Cookies set successfully!"}, status=200)
+        #             # elif not is_tenant and parent_tenant_id:
+        #             #     return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "permissions": permissions,  "logged_user": "human", "message": "Cookies set successfully!"}, status=200)
+        #     except:
+        #         None
+
+        # return JsonResponse({"error": "Cookies not found!", "status": False}, status=401)
 
 class UserEditView(APIView):
     permission_classes = [IsAuthenticated]
@@ -279,15 +415,12 @@ class UserEditView(APIView):
 
             serializer = UserSerializer(user)
 
-            is_human_tenant = request.session.get('is_human_tenant', False)
-
             userData = {
                 'id': user.id,
                 'username': user.username,
                 'email': user.email,
                 'first_name': user.first_name,
-                'last_name': user.last_name,
-                'is_human_tenant': is_human_tenant,
+                'last_name': user.last_name
             }
 
             # Check if the 'profile' related object exists
@@ -299,6 +432,8 @@ class UserEditView(APIView):
                     'lang': user.profile.language,
                     'desc': user.profile.desc,
                 })
+            
+            userData.update({"is_admin": user.is_admin_user()})
 
             return Response({"message": "Updated successfully", "user": userData}, status=status.HTTP_200_OK)
         else:
@@ -366,18 +501,19 @@ class PersonsListView(BaseDatatableView):
         ]
     
 class CreateUser(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         from .utils import parse_connection_string, _dsn_to_string
 
+        entity = request.data.get('entity')
         serializer = UserSerializer(data=request.data, context={'bypass_userprofile': True})
         subdomain = request.data.get('subdomain', None)
         if serializer.is_valid():
             user = serializer.save()
             if user:
                 tenant_data = {
-                    'entity': 'human',
+                    'entity': entity,
                     'entity_id': user.pk,
                     'firstname': user.first_name,
                     'lastname': user.last_name,
@@ -391,7 +527,8 @@ class CreateUser(APIView):
                 if tenant_serializer.is_valid():
                     tenant = tenant_serializer.save()
                     if tenant:                                                
-                        db_name = settings.MASTER_DB_NAME + '_human_' + str(tenant.pk)                     
+                        # db_name = settings.MASTER_DB_NAME + '_human_' + str(tenant.pk)    
+                        db_name = f"{settings.MASTER_DB_NAME}_{entity}_{tenant.pk}"
                         master_db_dsn_string = settings.MASTER_DB_DSN
                         master_db_dsn = parse_connection_string(master_db_dsn_string)
                         tenant_db_dsn = {
@@ -406,6 +543,15 @@ class CreateUser(APIView):
                         tenant.db_name = db_name
                         tenant.dsn = dsn                    
                         tenant.save()
+
+                        tenant_user_data = {
+                            "user_id": user.pk,
+                            "tenant_id": tenant.pk,
+                            "created_by_id": request.auth_user.id,
+                            "is_admin": True,
+                        }
+
+                        created = TenantUser.objects.create(**tenant_user_data)
                         
                         data = {**tenant_data, "db_name": tenant.db_name, "dsn": tenant.dsn}
                                                 
@@ -494,9 +640,11 @@ class ClearAuthentication(APIView):
         return response
     
 class RecentRegistrationView(BaseDatatableView):
+    permission_classes = [IsAuthenticated]
+
     model = Tenant
     columns = ['id', 'first_name', 'last_name', 'email', 'db_name', 'status', 'created_at']
-    def get_initial_queryset(self):       
+    def get_initial_queryset(self):    
         return Tenant.objects.filter(entity='human').filter(status=True)
 
     def filter_queryset(self, qs):
@@ -837,7 +985,7 @@ class UsersListView(BaseDatatableView):
         if self.request.auth_user.tenant_id:
             tenant_id = self.request.auth_user.tenant_id
 
-        return User.objects.filter(profile__tenant_id=tenant_id)
+        return User.objects.filter(tenant_users__tenant_id=tenant_id)
 
 
     def filter_queryset(self, qs):    
@@ -901,10 +1049,14 @@ class CreateTenantUser(APIView):
                 except Group.DoesNotExist:
                     return Response({"error": "Invalid group ID."}, status=400)
                 
-                profile, created = UserProfile.objects.update_or_create(
-                    user=user,
-                    defaults={'tenant_id': tenant_id}
+                UserProfile.objects.update_or_create(user=user)
+
+                TenantUser.objects.create(
+                    user_id=user.id,
+                    tenant_id=tenant_id,
+                    created_by_id=request.auth_user.id                           
                 )
+            
                 return Response(
                     {'message': 'User created successfully!'},
                     status=201
@@ -913,6 +1065,51 @@ class CreateTenantUser(APIView):
                 return Response({'message': 'Something went wrong!'}, status=400)
         else:
             return Response(serializer.errors, status=400)
+
+class CreateTenantUser(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request, args, *kwargs):
+        
+        try:            
+            serializer = UserSerializer(data=request.data, context={'request': request,'bypass_userprofile': True})
+            role_group = request.data.get('role', None)
+            tenant_id = 0
+
+            if request.auth_user.tenant_id:
+                tenant_id = request.auth_user.tenant_id
+
+            if serializer.is_valid():
+                user = serializer.save()
+                if user:
+                    try:
+                        group = Group.objects.get(id=role_group)
+                        user.groups.add(group)
+                    except Group.DoesNotExist:
+                        return Response({"error": "Invalid group ID."}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    UserProfile.objects.update_or_create(user=user)
+
+                    TenantUser.objects.create(
+                        user_id=user.id,
+                        tenant_id=tenant_id,
+                        created_by_id=request.auth_user.id                           
+                    )
+                    
+                    return Response(
+                        {'message': 'User created successfully!'},
+                        status=status.HTTP_201_CREATED
+                    )
+                else:
+                    return Response({'message': 'Something went wrong!'}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        except Exception as e:
+            # Log the exception here
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class GroupUpdateView(APIView):
     permission_classes = [IsAuthenticated]
@@ -994,8 +1191,9 @@ class GroupUpdateView(APIView):
             return Response({"errors":{"name": str(e)}}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 class FetchRoleView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     def get(self, request, id): 
+        user = request.auth_user
         group_id = id
         return_response = {}
         group = Group.objects.filter(id=group_id).first()
@@ -1022,31 +1220,51 @@ class FetchRoleView(APIView):
         return Response(return_response, status=status.HTTP_200_OK)
 
 class TestFunc(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
         # Get ContentType for the Group model
-        group_content_type = ContentType.objects.get_for_model(Group)
+        auth_user = request.auth_user
+
+        tenant = Tenant.objects.get(entity_id=auth_user.id)
         
-        # Fetch the 'human_admin' group
-        human_admin_group = Group.objects.filter(name='human_admin').first()
-        
-        if human_admin_group:
-            group_id = human_admin_group.id
-            
-            # Filter and delete PermissionsMeta records
-            permission_meta_records = PermissionsMeta.objects.filter(
-                content_type=group_content_type,
-                model_id=group_id
+        email = request.data.get('email')
+        is_admin = request.data.get('is_admin', 0)
+        user = User.objects.get(email=email)
+
+        if user and tenant:
+            TenantUser.objects.create(
+                user_id=user.id,
+                tenant_id=tenant.id,
+                created_by_id=auth_user.id,
+                is_admin=is_admin                          
             )
-            permission_meta_records.delete()  # Deletes all matching records
-            
-            # Delete the group itself
-            human_admin_group.delete()
-            
-            return JsonResponse({"status": "success", "message": "Group and associated permissions deleted successfully."})
+            return JsonResponse({"status": "success", "message": "Done."})
         else:
-            return JsonResponse({"status": "error", "message": "Group not found."})
+            return JsonResponse({"status": "error", "message": "User not found."})
+
+        # Stop
+        # group_content_type = ContentType.objects.get_for_model(Group)
+        
+        # # Fetch the 'human_admin' group
+        # human_admin_group = Group.objects.filter(name='human_admin').first()
+        
+        # if human_admin_group:
+        #     group_id = human_admin_group.id
+            
+        #     # Filter and delete PermissionsMeta records
+        #     permission_meta_records = PermissionsMeta.objects.filter(
+        #         content_type=group_content_type,
+        #         model_id=group_id
+        #     )
+        #     permission_meta_records.delete()  # Deletes all matching records
+            
+        #     # Delete the group itself
+        #     human_admin_group.delete()
+            
+        #     return JsonResponse({"status": "success", "message": "Group and associated permissions deleted successfully."})
+        # else:
+        #     return JsonResponse({"status": "error", "message": "Group not found."})
         
 class UpdateTenantUser(APIView):
     permission_classes = [IsAuthenticated]
@@ -1148,3 +1366,47 @@ class GetPermissions(APIView):
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+        
+class Dashboard(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+
+        try:
+            user_data = request.user
+            auth_user = request.auth_user
+
+            tenant_users = TenantUser.objects.filter(user=user_data.id).select_related('tenant')
+
+            tenants_array = {}
+
+            tenants_array['admin'] = None
+            
+            if auth_user.is_superuser:
+                admin_serialize = UserSerializer(auth_user)
+                tenants_array['admin'] = admin_serialize.data
+            else:
+                is_admin_user = TenantUser.objects.filter(user_id=user_data.id, tenant_id=0).exists()
+                if is_admin_user:
+                    admin = User.objects.filter(id=1, is_superuser=1, is_staff=1).first()
+                    if admin:
+                        admin_serialize = UserSerializer(admin)
+                        tenants_array['admin'] = admin_serialize.data
+
+            humans = {}
+            businesses = {}
+            if tenant_users:
+                for tenant_user in tenant_users:
+                    tenant_serializer = TenantSerializer(tenant_user.tenant)
+                    tenant_data = tenant_serializer.data
+                    if tenant_data:
+                        if tenant_data.get('entity') == 'human':
+                            humans[tenant_data.get('subdomain')] = tenant_data
+                        if tenant_data.get('entity') == 'business':
+                            businesses[tenant_data.get('subdomain')] = tenant_data
+                    
+            tenants_array['tenants'] = {"humans": humans, "businesses": businesses}
+            
+            return JsonResponse({"data": tenants_array}, status=200)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=401)

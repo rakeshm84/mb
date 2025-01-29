@@ -82,6 +82,9 @@
     "address": "כְּתוֹבֶת",
     "date_of_birth": "תַאֲרִיך לֵידָה",
     "description": "תֵאוּר",
-    "businesses": "עסקים"
+    "businesses": "עסקים",
+    "already_logged_in": "כבר מחובר",
+    "administrator": "מְנַהֵל",
+    "humans": "בני אדם"
   }
 }

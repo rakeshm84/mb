@@ -38,9 +38,24 @@ class Create(APIView):
         api_url = ulm_api + "create/"
         payload = request.data
 
+        payload.update({'entity': 'human'})
+
+        token = ''
+        auth_header = request.headers.get('Authorization')    
+        if auth_header:            
+            parts = auth_header.split()
+            if len(parts) == 2:
+                token = parts[1]
+                token = token   
+        
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json',
+        }
+
         try:
             # Make POST request to the API server
-            response = requests.post(api_url, json=payload)
+            response = requests.post(api_url, json=payload, headers=headers)
 
             if response.status_code == 201:
                 jsonResponse = response.json()
@@ -130,8 +145,20 @@ class RecentRegistrationView(BaseDatatableView):
         params = {
             'limit': request.GET.get('limit', 10) 
         }
+        token = ''
+        auth_header = request.headers.get('Authorization')    
+        if auth_header:            
+            parts = auth_header.split()
+            if len(parts) == 2:
+                token = parts[1]
+                token = token   
+        
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json',
+        }
         try:
-            response = requests.get(api_url, params=params)                          
+            response = requests.get(api_url, params=params, headers=headers)                          
             if response.status_code == 200:
                 data = response.json()                             
                 return JsonResponse(data, status=status.HTTP_200_OK)

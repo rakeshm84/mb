@@ -107,6 +107,9 @@
     "created": "Created",
     "edit_role": "Edit Role",
     "profile_information": "Profile Information",
-    "mobile": "Mobile"
+    "mobile": "Mobile",
+    "humans": "Humans",
+    "human": "Human",
+    "add_new_human": "Add New Human"
   }
 }

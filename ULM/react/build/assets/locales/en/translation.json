@@ -87,6 +87,8 @@
     "date_of_birth": "Date of Birth",
     "description": "Description",
     "businesses": "Businesses",
-    "already_logged_in": "Already Logged In"
+    "already_logged_in": "Already Logged In",
+    "administrator": "Administrator",
+    "humans": "Humans"
   }
 }
