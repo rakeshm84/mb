@@ -13,7 +13,8 @@ from .serializers import UserSerializer, TenantSerializer, MyTokenObtainPairSeri
 from .models import Tenant, UserProfile, PermissionsMeta, Entity, EntityContentType, TenantUser
 from django.db.models import OuterRef, Subquery, Value, Func, F, JSONField
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
-from django.http import HttpRequest
+from .validation_messages import ValidationMessages
+from ULM.signals import set_tenant
 
 import logging
 import time
@@ -270,7 +271,6 @@ class SetAuthentication(APIView):
             from .serializers import RefreshTokenObtainPairOnDomainShift
             platform = request.GET.get('platform')
             try:
-                # access_token = AccessToken(auth_cookie)
                 user_data = access_token.payload
 
                 user_id = user_data.get('user_id')
@@ -297,10 +297,11 @@ class SetAuthentication(APIView):
                                 access_token = AccessToken(new_access)
                                 payload = access_token.payload
                                 permissions = payload.get("permissions", [])
-
-                                new_access = str(refresh.access_token)
-                                new_refresh = str(refresh)
-                                return JsonResponse({"auth_token":new_access , "refresh_token":new_refresh, "permissions": permissions, "message": "Cookies set successfully!"}, status=200)
+                                is_tenant_user = payload.get('is_tenant_user', False)
+                                if is_tenant_user:
+                                    new_access = str(refresh.access_token)
+                                    new_refresh = str(refresh)
+                                    return JsonResponse({"auth_token":new_access , "refresh_token":new_refresh, "permissions": permissions, "message": "Cookies set successfully!"}, status=200)
                     
                 elif platform == 'human':
                     subdomain = request.GET.get('subdomain')
@@ -314,14 +315,15 @@ class SetAuthentication(APIView):
                                 access_token = AccessToken(new_access)
                                 payload = access_token.payload
                                 permissions = payload.get("permissions", [])
-
-                                new_access = str(refresh.access_token)
-                                new_refresh = str(refresh)
-                                return JsonResponse({"auth_token":new_access , "refresh_token":new_refresh, "permissions": permissions, "message": "Cookies set successfully!"}, status=200)
-                    if is_human:
-                        return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "permissions": permissions, "message": "Cookies set successfully!"}, status=200)
-                    elif not is_tenant and parent_tenant_id:
-                        return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "permissions": permissions,  "message": "Cookies set successfully!"}, status=200)
+                                is_tenant_user = payload.get('is_tenant_user', False)
+                                if is_tenant_user:
+                                    new_access = str(refresh.access_token)
+                                    new_refresh = str(refresh)
+                                    return JsonResponse({"auth_token":new_access , "refresh_token":new_refresh, "permissions": permissions, "message": "Cookies set successfully!"}, status=200)
+                    # if is_human:
+                    #     return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "permissions": permissions, "message": "Cookies set successfully!"}, status=200)
+                    # elif not is_tenant and parent_tenant_id:
+                    #     return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "permissions": permissions,  "message": "Cookies set successfully!"}, status=200)
                 
                 elif platform == 'ulm':
                     return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie, "permissions": permissions, "message": "Cookies set successfully!"}, status=200)
@@ -778,6 +780,7 @@ class RolesListView(BaseDatatableView):
         order = self.request.GET.get("order[0][column]")
         direction = self.request.GET.get("order[0][dir]", "asc")
         
+        qs = qs.order_by("-id")
         if order == "id":
             qs = qs.order_by("id" if direction == "asc" else "-id")
         elif order == "name":
@@ -885,7 +888,6 @@ class GroupCreateView(APIView):
             request_start_time = time.time()
             logger.info(f"Request Received at create_group method in  GroupCreateView: {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(request_start_time))}")
             
-        from ULM.signals import set_tenant
         try:
             tenant_id = 0
             tenant_parent_id = 0
@@ -1003,6 +1005,10 @@ class UsersListView(BaseDatatableView):
         order = self.request.GET.get("order[0][column]")
         direction = self.request.GET.get("order[0][dir]", "asc")
         
+        qs = qs.order_by("-id")
+
+        if order == "id":
+            qs = qs.order_by("id" if direction == "asc" else "-id")
         if order == "first_name":
             qs = qs.order_by("first_name" if direction == "asc" else "-first_name")
         elif order == "last_name":
@@ -1033,45 +1039,8 @@ class UsersListView(BaseDatatableView):
 class CreateTenantUser(APIView):
     permission_classes = [IsAuthenticated]
     def post(self, request, *args, **kwargs):
-        serializer = UserSerializer(data=request.data, context={'bypass_userprofile': True})
-        role_group = request.data.get('role', None)
-        tenant_id = 0
-
-        if request.auth_user.tenant_id:
-            tenant_id = request.auth_user.tenant_id
-
-        if serializer.is_valid():
-            user = serializer.save()
-            if user:
-                try:
-                    group = Group.objects.get(id=role_group)
-                    user.groups.add(group)
-                except Group.DoesNotExist:
-                    return Response({"error": "Invalid group ID."}, status=400)
-                
-                UserProfile.objects.update_or_create(user=user)
-
-                TenantUser.objects.create(
-                    user_id=user.id,
-                    tenant_id=tenant_id,
-                    created_by_id=request.auth_user.id                           
-                )
-            
-                return Response(
-                    {'message': 'User created successfully!'},
-                    status=201
-                )
-            else:
-                return Response({'message': 'Something went wrong!'}, status=400)
-        else:
-            return Response(serializer.errors, status=400)
-
-class CreateTenantUser(APIView):
-    permission_classes = [IsAuthenticated]
-    def post(self, request, args, *kwargs):
-        
-        try:            
-            serializer = UserSerializer(data=request.data, context={'request': request,'bypass_userprofile': True})
+        try:
+            serializer = UserSerializer(data=request.data, context={'request': request, 'bypass_userprofile': True})
             role_group = request.data.get('role', None)
             tenant_id = 0
 
@@ -1081,29 +1050,30 @@ class CreateTenantUser(APIView):
             if serializer.is_valid():
                 user = serializer.save()
                 if user:
-                    try:
-                        group = Group.objects.get(id=role_group)
-                        user.groups.add(group)
-                    except Group.DoesNotExist:
-                        return Response({"error": "Invalid group ID."}, status=status.HTTP_400_BAD_REQUEST)
+                    if role_group:
+                        try:
+                            group = Group.objects.get(id=role_group)
+                            user.groups.add(group)
+                        except Group.DoesNotExist:
+                            return Response({"error": "Invalid group ID."}, status=status.HTTP_400_BAD_REQUEST)
                     
                     UserProfile.objects.update_or_create(user=user)
 
                     TenantUser.objects.create(
                         user_id=user.id,
                         tenant_id=tenant_id,
-                        created_by_id=request.auth_user.id                           
+                        created_by_id=request.auth_user.id
                     )
-                    
+
                     return Response(
-                        {'message': 'User created successfully!'},
+                        {'message': ValidationMessages.CREATED_SUCCESSFULLY},
                         status=status.HTTP_201_CREATED
                     )
                 else:
                     return Response({'message': 'Something went wrong!'}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+            
         except Exception as e:
             # Log the exception here
             return Response(
@@ -1274,11 +1244,47 @@ class UpdateTenantUser(APIView):
 
         if not user:
             return Response({"message": "Person not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        tenant_id = 0
+        if request:
+            if request.auth_user:
+                if request.auth_user.tenant_id:
+                    tenant_id = request.auth_user.tenant_id       
+    
+    
+        if tenant_id:
+            tenant_users = TenantUser.objects.filter(tenant_id=tenant_id).select_related('user')   
+            user_ids = set()         
+            for tenant_user in tenant_users:
+                u = tenant_user.user
+                user_ids.add(u.id)
+                
+        new_username = request.data.get('username').strip()
+        if new_username and new_username != user.username:
+            user_found = User.objects.filter(username__iexact=new_username).first()
+            if user_found:
+                if user_found.id in user_ids:
+                    return Response({"username": ValidationMessages.USERNAME_NOT_UNIQUE_CREATE_NEW_USER}, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response({"username": ValidationMessages.USERNAME_NOT_UNIQUE}, status=status.HTTP_400_BAD_REQUEST)
+            user.username = new_username         
+
+        new_email = request.data.get('email').strip()
+        if new_email and new_email != user.email:
+            user_email_found = User.objects.filter(email__iexact=new_email).first()
+            if user_email_found:
+                if user_email_found.id in user_ids:
+                    return Response({"email": ValidationMessages.EMAIL_NOT_UNIQUE_CREATE_NEW_USER}, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response({"email": ValidationMessages.EMAIL_NOT_UNIQUE}, status=status.HTTP_400_BAD_REQUEST)
+            user.email = new_email 
+
 
         # Update user fields
         user.first_name = request.data.get('first_name', user.first_name)
         user.last_name = request.data.get('last_name', user.last_name)
-        user.email = request.data.get('email', user.email)
+        user.email = new_email
+        user.username = new_username
 
         # Update profile fields if they exist
         if hasattr(user, 'profile'):
@@ -1303,7 +1309,7 @@ class UpdateTenantUser(APIView):
         if role_group:
             try:
                 group = Group.objects.get(id=role_group)
-                user.groups.set([group])  # Use `set` to set a single group (if necessary)
+                user.groups.set([group])  
             except Group.DoesNotExist:
                 return Response({"message": "Group does not exist"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1325,7 +1331,7 @@ class UpdateTenantUser(APIView):
                 'lang': user.profile.language,
             })
 
-        return Response({"message": "Updated successfully", "user": userData}, status=status.HTTP_200_OK)
+        return Response({"message": ValidationMessages.UPDATED_SUCCESSFULLY, "user": userData}, status=status.HTTP_200_OK)
 class SetLanguageView(APIView): 
     permission_classes = [IsAuthenticated]  
 
@@ -1381,6 +1387,8 @@ class Dashboard(APIView):
             tenants_array = {}
 
             tenants_array['admin'] = None
+
+            total_tenants = 0
             
             if auth_user.is_superuser:
                 admin_serialize = UserSerializer(auth_user)
@@ -1402,11 +1410,67 @@ class Dashboard(APIView):
                     if tenant_data:
                         if tenant_data.get('entity') == 'human':
                             humans[tenant_data.get('subdomain')] = tenant_data
+                            total_tenants += 1
                         if tenant_data.get('entity') == 'business':
                             businesses[tenant_data.get('subdomain')] = tenant_data
+                            total_tenants += 1
                     
             tenants_array['tenants'] = {"humans": humans, "businesses": businesses}
+            tenants_array['total_tenants'] = total_tenants
             
             return JsonResponse({"data": tenants_array}, status=200)
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=401)
+        
+class BindExistingUser(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        try: 
+            
+            if request.data.get('username'):
+                user = User.objects.filter(username=request.data.get('username')).first()
+            elif request.data.get('email'):
+                user = User.objects.filter(email=request.data.get('email')).first()
+            
+            if not user:
+                return Response({'message': 'User not found!'}, status=status.HTTP_404_NOT_FOUND)
+
+            if user:              
+                role_group = request.data.get('role', None)
+                tenant_id = getattr(request.auth_user, 'tenant_id', None)
+                
+                tenant_parent_id = 0
+                if request.auth_user.tenant_parent_id:
+                    tenant_parent_id = request.auth_user.tenant_parent_id
+               
+                if role_group and tenant_id:
+                    set_tenant(tenant_id, tenant_parent_id)
+                    try:                        
+                        group = Group.objects.get(id=role_group)
+                        user.groups.add(group)
+                    except Group.DoesNotExist:                       
+                        return Response({"error": "Invalid group ID."}, status=status.HTTP_400_BAD_REQUEST)
+                    set_tenant(None, None)
+            
+          
+                # Add user to TenantUser    
+                TenantUser.objects.create(
+                    user_id=user.id,
+                    tenant_id=tenant_id,
+                    created_by_id=request.auth_user.id
+                )
+                
+                return Response(
+                    {'message': 'User created successfully!'},
+                    status=status.HTTP_201_CREATED
+                )
+            else:                
+                return Response({'message': 'Something went wrong!'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        except Exception as e:
+            # Log the exception here
+            return Response(
+                {"errors": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

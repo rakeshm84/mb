@@ -387,7 +387,7 @@ class FetchRoleView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_403_FORBIDDEN)
         
 class UpdateUser(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, id, *args, **kwargs):
         ulm_api = settings.ULM_API_URL + "api/"
@@ -552,7 +552,6 @@ class GetPermissions(APIView):
     def get(self, request, *args, **kwargs):
         ulm_api = settings.ULM_API_URL + "api/"
         api_url = f"{ulm_api}get_user_perms/"
-        print('api_url', api_url)
 
         token = ''
         auth_header = request.headers.get('Authorization')    
@@ -577,3 +576,36 @@ class GetPermissions(APIView):
                 return JsonResponse({"error": "Something went wrong"}, status=response.status_code)
         except requests.exceptions.RequestException as e:
             return JsonResponse({"error": "Failed to connect to the API server.", "details": str(e)}, status=503)
+        
+class BindExistingUser(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        ulm_api = settings.ULM_API_URL + "api/"
+        api_url = f"{ulm_api}bind-user/"
+        
+        token = ''
+        auth_header = request.headers.get('Authorization')    
+        if auth_header:            
+            parts = auth_header.split()
+            if len(parts) == 2:
+                token = parts[1]
+                token = token   
+        
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json',          
+        }
+        
+        data = request.data
+
+        try:
+            response = requests.post(api_url, json=data, headers=headers)
+        
+            if response.status_code == 201:      
+                return JsonResponse(response.json(), status=response.status_code)
+            else:
+                return JsonResponse({"message": "Something went wrong."}, status=response.status_code)
+        except requests.exceptions.RequestException as e:
+            return JsonResponse({"message": "Failed to connect to the API server.", "details": str(e)}, status=503)
+        

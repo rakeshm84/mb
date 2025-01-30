@@ -61,12 +61,16 @@
       "username": {
         "required": "שם משתמש נדרש",
         "not_unique": "שם משתמש זה כבר בשימוש. אנא בחר שם אחר.",
-        "space_not_allowed": "אסור רווח בשם המשתמש"
+        "not_unique_create_new_user": "שם המשתמש הזה כבר בשימוש. אתה יכול להשתמש בזה על ידי יצירת משתמש חדש.",
+        "space_not_allowed": "אסור רווח בשם המשתמש",
+        "already_created": "שם משתמש כבר קיים."
       },
       "email": {
         "required": "דוא\"ל נדרש",
         "invalid": "אנא הזן כתובת דוא\"ל חוקית",
-        "not_unique": "דואר אלקטרוני זה כבר בשימוש. אנא בחר כתובת אחרת."
+        "not_unique": "דואר אלקטרוני זה כבר בשימוש. אנא בחר כתובת אחרת.",
+        "not_unique_create_new_user": "האימייל הזה כבר בשימוש. אתה יכול להשתמש בזה על ידי יצירת משתמש חדש.",
+        "already_created": "דוא\"ל כבר קיים."
       },
       "password": {
         "required": "סיסמה נדרשת",
@@ -111,6 +115,10 @@
     "profile_information": "מידע על פרופיל",
     "mobile": "נייד",
     "edit_user": "ערוך משתמש",
-    "add_new_user": "הוסף משתמש חדש"
+    "add_new_user": "הוסף משתמש חדש",
+    "saved_successfully": "נשמר בהצלחה",
+    "deleted_successfully": "נמחק בהצלחה",
+    "created_successfully": "נוצר בהצלחה",
+    "updated_successfully": "עודכן בהצלחה"
   }
 }

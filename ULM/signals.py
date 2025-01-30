@@ -56,18 +56,18 @@ def permission_post_save(sender, instance, created, **kwargs):
         create_permission_meta(Permission, instance.id)
 
 # Signal for User-Group relationships (through table: auth_user_groups)
-# @receiver(m2m_changed, sender=User.groups.through)
-# def user_groups_m2m_changed(sender, instance, action, pk_set, **kwargs):
-#     if action == "post_add":  # After adding a new relation
-#         for group_id in pk_set:
-#             create_permission_meta(Group, group_id)
+@receiver(m2m_changed, sender=User.groups.through)
+def user_groups_m2m_changed(sender, instance, action, pk_set, **kwargs):
+    if action == "post_add":  # After adding a new relation
+        for group_id in pk_set:
+            create_permission_meta(Group, group_id)
 
 # # Signal for User-Permission relationships (through table: auth_user_user_permissions)
-# @receiver(m2m_changed, sender=User.user_permissions.through)
-# def user_permissions_m2m_changed(sender, instance, action, pk_set, **kwargs):
-#     if action == "post_add":
-#         for permission_id in pk_set:
-#             create_permission_meta(Permission, permission_id)
+@receiver(m2m_changed, sender=User.user_permissions.through)
+def user_permissions_m2m_changed(sender, instance, action, pk_set, **kwargs):
+    if action == "post_add":
+        for permission_id in pk_set:
+            create_permission_meta(Permission, permission_id)
 
 ##############################################################################################
 

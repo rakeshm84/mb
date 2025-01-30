@@ -3,10 +3,14 @@ from django.utils.translation import gettext_lazy as _
 class ValidationMessages:
     USERNAME_REQUIRED = 'lang.validations.username.required'
     USERNAME_NOT_UNIQUE = 'lang.validations.username.not_unique'
+    USERNAME_ALREADY_CREATED = 'lang.validations.username.already_created'
+    USERNAME_NOT_UNIQUE_CREATE_NEW_USER = 'lang.validations.username.not_unique_create_new_user'
     
     EMAIL_REQUIRED = 'lang.validations.email.required'
     EMAIL_INVALID = 'lang.validations.email.invalid'
     EMAIL_NOT_UNIQUE = 'lang.validations.email.not_unique'
+    EMAIL_ALREADY_CREATED = 'lang.validations.email.already_created'
+    EMAIL_NOT_UNIQUE_CREATE_NEW_USER = 'lang.validations.email.not_unique_create_new_user'
 
     PASSWORD_REQUIRED = 'lang.validations.password.required'
     PASSWORD_UPPERCASE = 'lang.validations.password.contains_uppercase'
@@ -23,3 +27,8 @@ class ValidationMessages:
     SUBDOMAIN_EXISTS = 'lang.validations.subdomain_exists'
     SUBDOMAIN_LENGTH = 'lang.validations.subdomain_length'
     USERNAME_NO_SPACES = 'lang.validations.username.space_not_allowed'
+
+    CREATED_SUCCESSFULLY = 'lang.created_successfully'
+    DELETED_SUCCESSFULLY = 'lang.deleted_successfully'
+    UPDATED_SUCCESSFULLY = 'lang.updated_successfully'
+    SAVED_SUCCESSFULLY = 'lang.saved_successfully'

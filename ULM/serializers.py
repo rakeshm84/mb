@@ -29,8 +29,20 @@ class UserSerializer(serializers.ModelSerializer):
         
         # Validate username
         username = data.get('username', '').strip()
+        request = self.context.get('request')
+        tenant_id = None
+        if request:
+            if request.auth_user:
+                if request.auth_user.tenant_id:
+                    tenant_id = request.auth_user.tenant_id
         if not username:
             errors.setdefault('username', []).append(ValidationMessages.USERNAME_REQUIRED)
+        elif tenant_id:
+            tenant_users = TenantUser.objects.filter(tenant_id=tenant_id).select_related('user')
+            for tenant_user in tenant_users:   
+                user = tenant_user.user
+                if(user.username.lower() == username.lower()):
+                    errors.setdefault('username', []).append(ValidationMessages.USERNAME_ALREADY_CREATED)
         elif User.objects.filter(username=username).exists():
             errors.setdefault('username', []).append(ValidationMessages.USERNAME_NOT_UNIQUE)
         elif ' ' in username:
@@ -40,14 +52,19 @@ class UserSerializer(serializers.ModelSerializer):
         email = data.get('email', '').strip()
         if not email:
             errors.setdefault('email', []).append(ValidationMessages.EMAIL_REQUIRED)
-        else:
-            email_validator = EmailValidator()
-            try:
-                email_validator(email)
-            except ValidationError:
-                errors.setdefault('email', []).append(ValidationMessages.EMAIL_INVALID)
-            if User.objects.filter(email=email).exists():
-                errors.setdefault('email', []).append(ValidationMessages.EMAIL_NOT_UNIQUE)
+        elif tenant_id:
+            tenant_users = TenantUser.objects.filter(tenant_id=tenant_id).select_related('user')            
+            for tenant_user in tenant_users:
+                user = tenant_user.user
+                if user and user.email.lower() == email.lower():                       
+                    errors.setdefault('email', []).append(ValidationMessages.EMAIL_ALREADY_CREATED)  
+        email_validator = EmailValidator()
+        try:
+            email_validator(email)
+        except ValidationError:
+            errors.setdefault('email', []).append(ValidationMessages.EMAIL_INVALID)
+        if User.objects.filter(email=email).exists():
+            errors.setdefault('email', []).append(ValidationMessages.EMAIL_NOT_UNIQUE)
 
         # Validate password
         password = data.get('password', '').strip()
@@ -145,9 +162,9 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
         # tenant_id = 0
         # is_admin = 0
-        # if hasattr(user, 'profile'):
-        #     tenant_id = user.profile.tenant_id
-        #     is_admin = user.profile.is_admin
+        if hasattr(user, 'profile'):
+            updated_at = user.profile.updated_at
+            token['updated_at'] = updated_at
         
         # if user.is_superuser:
         #     is_admin = 1
@@ -208,16 +225,21 @@ class RefreshTokenObtainPairOnDomainShift(serializers.Serializer):
 
         token = RefreshToken.for_user(user)
 
+        if hasattr(user, 'profile'):
+            updated_at = user.profile.updated_at
+            token['updated_at'] = updated_at
+
         if tenant_id == 0:
             tenant_user = TenantUser.objects.filter(user_id=user.id, tenant_id=tenant_id).values("id", "user_id", "is_admin", "tenant_id").first()
         else:
             tenant_user = TenantUser.objects.filter(user_id=user.id, tenant_id=tenant_id).select_related('tenant').values("id", "user_id", "is_admin", "tenant_id", "tenant__parent_id", "tenant__entity", "tenant__dsn").first()
 
-        
+        token["is_tenant_user"] = False
         if tenant_user:
             # Add custom data to the token
             user_permissions = user.get_all_permissions(tenant_user.get('tenant_id'))
 
+            token["is_tenant_user"] = True
             token["is_admin"] = tenant_user.get('is_admin')
             token["tenant_id"] = tenant_user.get('tenant_id', None)
             token["parent_tenant_id"] = tenant_user.get('tenant__parent_id', 0)

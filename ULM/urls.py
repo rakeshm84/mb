@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import AuthenticationView, UserDetailView, TestView, create_superuser, SetAuthentication, UserEditView, PersonsListView, CreateUser, UpdateUser, ClearAuthentication, RecentRegistrationView, CheckPermission, CreateCustomPermission, RolesListView, PermissionListView, GroupCreateView, CreateEntityAndAssignTable, UsersListView, CreateTenantUser, GroupUpdateView, FetchRoleView, TestFunc, SetLanguageView, UpdateTenantUser, GetPermissions, Dashboard
+from .views import AuthenticationView, UserDetailView, TestView, create_superuser, SetAuthentication, UserEditView, PersonsListView, CreateUser, UpdateUser, ClearAuthentication, RecentRegistrationView, CheckPermission, CreateCustomPermission, RolesListView, PermissionListView, GroupCreateView, CreateEntityAndAssignTable, UsersListView, CreateTenantUser, GroupUpdateView, FetchRoleView, TestFunc, SetLanguageView, UpdateTenantUser, GetPermissions, Dashboard, BindExistingUser
 from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
 
 urlpatterns = [
@@ -33,4 +33,5 @@ urlpatterns = [
     path('set-language/', SetLanguageView.as_view(), name='set-language'),
     path('get_user_perms/', GetPermissions.as_view(), name='get_perms'),
     path('dashboard/', Dashboard.as_view(), name='dashboard'),
+    path('bind-user/', BindExistingUser.as_view(), name='bind_user'),
 ]
