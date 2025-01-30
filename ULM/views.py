@@ -379,9 +379,15 @@ class UserEditView(APIView):
     def get(self, request, id, format=None):
         try:
             # Fetch the person object using the id
+            tenant_id = 0
+            if self.request.auth_user.tenant_id:
+                tenant_id = self.request.auth_user.tenant_id
             user = User.objects.select_related('profile').get(id=id)
-            user_group = user.groups.first()
-            group = user_group.id if user_group else None
+            tenant_user = TenantUser.objects.filter(tenant_id=tenant_id, user_id=id).first()
+            if tenant_user:
+                group=tenant_user.group_id
+            # user_group = user.groups.first()
+            # group = user_group.id if user_group else None
 
             # Serialize the person data
             serializer = UserSerializer(user)
@@ -1041,7 +1047,7 @@ class CreateTenantUser(APIView):
     def post(self, request, *args, **kwargs):
         try:
             serializer = UserSerializer(data=request.data, context={'request': request, 'bypass_userprofile': True})
-            role_group = request.data.get('role', None)
+            role_id = request.data.get('role', None)
             tenant_id = 0
 
             if request.auth_user.tenant_id:
@@ -1050,19 +1056,20 @@ class CreateTenantUser(APIView):
             if serializer.is_valid():
                 user = serializer.save()
                 if user:
-                    if role_group:
-                        try:
-                            group = Group.objects.get(id=role_group)
-                            user.groups.add(group)
-                        except Group.DoesNotExist:
-                            return Response({"error": "Invalid group ID."}, status=status.HTTP_400_BAD_REQUEST)
+                    # if role_id:
+                    #     try:
+                    #         group = Group.objects.get(id=role_id)
+                    #         user.groups.add(group)
+                    #     except Group.DoesNotExist:
+                    #         return Response({"error": "Invalid group ID."}, status=status.HTTP_400_BAD_REQUEST)
                     
                     UserProfile.objects.update_or_create(user=user)
 
                     TenantUser.objects.create(
                         user_id=user.id,
                         tenant_id=tenant_id,
-                        created_by_id=request.auth_user.id
+                        created_by_id=request.auth_user.id,
+                        group_id=role_id
                     )
 
                     return Response(
@@ -1305,13 +1312,14 @@ class UpdateTenantUser(APIView):
         user.save()
 
         # Update user group (auth_group)
-        role_group = request.data.get('role', None)
-        if role_group:
-            try:
-                group = Group.objects.get(id=role_group)
-                user.groups.set([group])  
-            except Group.DoesNotExist:
-                return Response({"message": "Group does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+        role_id = request.data.get('role', None)
+        if role_id:
+            TenantUser.objects.filter(user_id=id, tenant_id=tenant_id).update(group=role_id)
+            # try:
+            #     group = Group.objects.get(id=role_id)
+            #     user.groups.set([group])  
+            # except Group.DoesNotExist:
+            #     return Response({"message": "Group does not exist"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Prepare the response data
         userData = {

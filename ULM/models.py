@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 
 class Entity(models.TextChoices):
     HUMAN = "human", "Human"
@@ -123,6 +123,7 @@ class TenantUser(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_tenant_users')
     created_at = models.DateTimeField(auto_now_add=True)
     is_admin = models.BooleanField(default=False, null=False)
+    group = models.ForeignKey(Group, on_delete=models.SET_NULL, null=True, blank=True, related_name='tenant_users')
 
     class Meta:
         db_table = 'tenant_users'

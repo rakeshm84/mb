@@ -1,6 +1,6 @@
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.models import Permission, Group
-from .models import PermissionsMeta
+from .models import PermissionsMeta, TenantUser
 
 class CustomPermissionBackend(ModelBackend):
     
@@ -47,23 +47,54 @@ def get_tenant_user_permissions(user, tenant_id):
 
     return {f"{perm.content_type.model}.{perm.codename}" for perm in user_permissions}
 
+# def get_tenant_group_permissions(user, tenant_id):
+#     """
+#     Fetch tenant-specific group permissions for the given user and tenant ID.
+#     """
+#     # Fetch groups created by the current tenant
+#     group_ids = PermissionsMeta.objects.filter(
+#         tenant_id=tenant_id,
+#         content_type__model='group'
+#     ).values_list('model_id', flat=True)
+
+#     if not group_ids:
+#         group_ids = []
+
+#     # Use these group IDs to filter permissions
+#     group_permissions = Permission.objects.filter(
+#         group__id__in=group_ids,
+#         group__user=user
+#     )
+
+#     return {f"{perm.content_type.model}.{perm.codename}" for perm in group_permissions}
+
 def get_tenant_group_permissions(user, tenant_id):
     """
     Fetch tenant-specific group permissions for the given user and tenant ID.
     """
+
+    # Get the user's group ID from the TenantUser table
+    user_group_ids = TenantUser.objects.filter(user=user, tenant_id=tenant_id).values_list('group_id', flat=True)
+
+    if not user_group_ids:
+        return set()  # Return empty set if no groups found
+
     # Fetch groups created by the current tenant
-    group_ids = PermissionsMeta.objects.filter(
+    tenant_group_ids = PermissionsMeta.objects.filter(
         tenant_id=tenant_id,
         content_type__model='group'
     ).values_list('model_id', flat=True)
 
-    if not group_ids:
-        group_ids = []
+    if not tenant_group_ids:
+        return set()  # Return empty set if no tenant groups found
+
+    # Filter only groups that belong to the user and the tenant
+    valid_group_ids = set(user_group_ids).intersection(set(tenant_group_ids))
+
+    if not valid_group_ids:
+        return set()  # Return empty set if no valid groups
 
     # Use these group IDs to filter permissions
-    group_permissions = Permission.objects.filter(
-        group__id__in=group_ids,
-        group__user=user
-    )
+    group_permissions = Permission.objects.filter(group__id__in=valid_group_ids)
 
     return {f"{perm.content_type.model}.{perm.codename}" for perm in group_permissions}
