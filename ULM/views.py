@@ -384,6 +384,7 @@ class UserEditView(APIView):
                 tenant_id = self.request.auth_user.tenant_id
             user = User.objects.select_related('profile').get(id=id)
             tenant_user = TenantUser.objects.filter(tenant_id=tenant_id, user_id=id).first()
+            group = None
             if tenant_user:
                 group=tenant_user.group_id
             # user_group = user.groups.first()
@@ -1452,21 +1453,22 @@ class BindExistingUser(APIView):
                 if request.auth_user.tenant_parent_id:
                     tenant_parent_id = request.auth_user.tenant_parent_id
                
-                if role_group and tenant_id:
-                    set_tenant(tenant_id, tenant_parent_id)
-                    try:                        
-                        group = Group.objects.get(id=role_group)
-                        user.groups.add(group)
-                    except Group.DoesNotExist:                       
-                        return Response({"error": "Invalid group ID."}, status=status.HTTP_400_BAD_REQUEST)
-                    set_tenant(None, None)
+                # if role_group and tenant_id:
+                #     set_tenant(tenant_id, tenant_parent_id)
+                #     try:                        
+                #         group = Group.objects.get(id=role_group)
+                #         user.groups.add(group)
+                #     except Group.DoesNotExist:                       
+                #         return Response({"error": "Invalid group ID."}, status=status.HTTP_400_BAD_REQUEST)
+                #     set_tenant(None, None)
             
           
                 # Add user to TenantUser    
                 TenantUser.objects.create(
                     user_id=user.id,
                     tenant_id=tenant_id,
-                    created_by_id=request.auth_user.id
+                    created_by_id=request.auth_user.id,
+                    group_id=role_group
                 )
                 
                 return Response(
