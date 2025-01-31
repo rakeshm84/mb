@@ -413,6 +413,12 @@ class UserEditView(APIView):
     def post(self, request, id, *args, **kwargs):
         user = User.objects.filter(id=id).select_related('profile').first()
 
+        tenant_id = None
+        if self.request.auth_user.tenant_id:
+            tenant_id = self.request.auth_user.tenant_id
+        
+        user.tenant_id = tenant_id  
+
         if user:
             user.first_name = request.data.get('first_name', user.first_name)
             user.last_name = request.data.get('last_name', user.last_name)
