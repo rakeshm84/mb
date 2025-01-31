@@ -119,7 +119,7 @@ class EntityContentType(models.Model):
 
 class TenantUser(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tenant_users')
-    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='tenant_users')
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, null=True, blank=True, related_name='tenant_users')
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_tenant_users')
     created_at = models.DateTimeField(auto_now_add=True)
     is_admin = models.BooleanField(default=False, null=False)

@@ -862,6 +862,7 @@ class PermissionListView(APIView):
                 permissions_dict[content_type_name] = []
             permission_array_item['id'] = perm.id
             permission_array_item['name'] = perm.name
+            permission_array_item['code_name'] = perm.codename
             permissions_dict[content_type_name].append(permission_array_item)
 
         # Example output formatting
@@ -986,16 +987,16 @@ class CreateEntityAndAssignTable(APIView):
         
 class UsersListView(BaseDatatableView):
     model = User
-    columns = ['id', 'first_name', 'last_name', 'email', 'is_active', 'date_joined']
-    searchable_columns = ['id', 'first_name', 'last_name', 'email', 'date_joined']
-    order_columns = ['id', 'first_name', 'last_name', 'email', 'is_active', 'date_joined']
+    columns = ['id', 'first_name', 'last_name', 'email', 'is_active', 'date_joined', 'tenant_users__group__name']
+    searchable_columns = ['id', 'first_name', 'last_name', 'email', 'date_joined', 'tenant_users__group__name']
+    order_columns = ['id', 'first_name', 'last_name', 'email', 'is_active', 'date_joined', 'tenant_users__group__name']
+
     def get_initial_queryset(self):  
-        tenant_id = 0
-        if self.request.auth_user.tenant_id:
-            tenant_id = self.request.auth_user.tenant_id
+        tenant_id = self.request.auth_user.tenant_id if self.request.auth_user.tenant_id else 0
 
-        return User.objects.filter(tenant_users__tenant_id=tenant_id)
-
+        return User.objects.filter(tenant_users__tenant_id=tenant_id).values(
+            'id', 'first_name', 'last_name', 'email', 'is_active', 'date_joined', 'tenant_users__group__name'
+        )
 
     def filter_queryset(self, qs):    
         search_value = self.request.GET.get('search[value]', '').strip()
@@ -1004,7 +1005,8 @@ class UsersListView(BaseDatatableView):
                 Q(first_name__icontains=search_value) |   
                 Q(last_name__icontains=search_value) |
                 Q(email__icontains=search_value) |   
-                Q(date_joined__icontains=search_value)    
+                Q(date_joined__icontains=search_value) |
+                Q(tenant_users__group__name__icontains=search_value)
             )
         return qs
     
@@ -1014,31 +1016,33 @@ class UsersListView(BaseDatatableView):
         
         qs = qs.order_by("-id")
 
-        if order == "id":
-            qs = qs.order_by("id" if direction == "asc" else "-id")
-        if order == "first_name":
-            qs = qs.order_by("first_name" if direction == "asc" else "-first_name")
-        elif order == "last_name":
-            qs = qs.order_by("last_name" if direction == "asc" else "-last_name")
-        elif order == "email":
-            qs = qs.order_by("email" if direction == "asc" else "-email")
-        elif order == "is_active":
-            qs = qs.order_by("is_active" if direction == "asc" else "-is_active")
-        elif order == "date_joined":
-            qs = qs.order_by("date_joined" if direction == "asc" else "-date_joined")
+        order_map = {
+            "id": "id",
+            "first_name": "first_name",
+            "last_name": "last_name",
+            "email": "email",
+            "is_active": "is_active",
+            "date_joined": "date_joined",
+            "role": "tenant_users__group__name",
+        }
+
+        if order in order_map:
+            field = order_map[order]
+            qs = qs.order_by(field if direction == "asc" else f"-{field}")
 
         return qs
 
     def prepare_results(self, qs):
-        # Format the results to include user_data as a dictionary
+        # qs is a list of dictionaries because of .values()
         return [
             {
-                'id': user.id,
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'email': user.email,
-                'is_active': user.is_active,
-                'date_joined': user.date_joined,
+                'id': user['id'],
+                'first_name': user['first_name'],
+                'last_name': user['last_name'],
+                'email': user['email'],
+                'is_active': user['is_active'],
+                'date_joined': user['date_joined'],
+                'role': user.get('tenant_users__group__name', '')  # Use .get() to avoid KeyError
             }
             for user in qs
         ]
@@ -1198,28 +1202,53 @@ class FetchRoleView(APIView):
         return Response(return_response, status=status.HTTP_200_OK)
 
 class TestFunc(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
         # Get ContentType for the Group model
-        auth_user = request.auth_user
+        # TenantUser.objects.create(
+        #     user_id=13,
+        #     tenant_id=None,
+        #     created_by_id=1,
+        #     is_admin=0                          
+        # )
 
-        tenant = Tenant.objects.get(entity_id=auth_user.id)
+        # Tenant.objects.create(
+        #     id=0,
+        #     parent_id=0,
+        #     entity="admin",
+        #     entity_id=1,
+        #     firstname="super",
+        #     lastname="admin",
+        #     email="admin@example.com",
+        #     name="admin",
+        #     subdomain=None,
+        #     domain=None,
+        #     db_name="mb_admin",
+        #     dsn="django.db.backends.mysql://root:@localhost:3306/mb_admin",
+        #     status=1
+        # )
+
+        return JsonResponse({"status": "success", "message": "Done."})
+
+        # auth_user = request.auth_user
+
+        # tenant = Tenant.objects.get(entity_id=auth_user.id)
         
-        email = request.data.get('email')
-        is_admin = request.data.get('is_admin', 0)
-        user = User.objects.get(email=email)
+        # email = request.data.get('email')
+        # is_admin = request.data.get('is_admin', 0)
+        # user = User.objects.get(email=email)
 
-        if user and tenant:
-            TenantUser.objects.create(
-                user_id=user.id,
-                tenant_id=tenant.id,
-                created_by_id=auth_user.id,
-                is_admin=is_admin                          
-            )
-            return JsonResponse({"status": "success", "message": "Done."})
-        else:
-            return JsonResponse({"status": "error", "message": "User not found."})
+        # if user and tenant:
+        #     TenantUser.objects.create(
+        #         user_id=user.id,
+        #         tenant_id=tenant.id,
+        #         created_by_id=auth_user.id,
+        #         is_admin=is_admin                          
+        #     )
+        #     return JsonResponse({"status": "success", "message": "Done."})
+        # else:
+        #     return JsonResponse({"status": "error", "message": "User not found."})
 
         # Stop
         # group_content_type = ContentType.objects.get_for_model(Group)

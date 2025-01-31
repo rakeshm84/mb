@@ -31,7 +31,9 @@
       "back": "Back",
       "search": "Search",
       "cancel": "Cancel",
-      "delete": "Delete"
+      "delete": "Delete",
+      "go_back": "Go Back",
+      "go_home": "Go to Home"
     },
     "logout": "Logout",
 
@@ -103,6 +105,7 @@
     "subdomain": "Subdomain",
     "roles": "Roles",
     "role": "Role",
+    "select_role": "Select Role",
     "assign_permissions": "Assign Permissions",
     "users": "Users",
     "user_string": "User",
@@ -120,6 +123,14 @@
     "saved_successfully": "Saved successfully.",
     "deleted_successfully": "Deleted successfully.",
     "created_successfully": "Created successfully.",
-    "updated_successfully": "Updated successfully."
+    "updated_successfully": "Updated successfully.",
+    "products": "Products",
+    "not_found": "Page Not Found",
+    "not_found_text": "Sorry, the page you're looking for doesn't exist.",
+    "unauthorized": "Unauthorized Access",
+    "unauthorized_text": "Sorry, you don't have permission to view this page.",
+    "product": "Product",
+    "edit_product": "Edit Product",
+    "add_new_product": "Add New Product"
   }
 }

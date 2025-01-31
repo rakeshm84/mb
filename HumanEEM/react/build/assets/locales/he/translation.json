@@ -31,7 +31,9 @@
       "back": "בְּחֲזָרָה",
       "search": "לְחַפֵּשׂ",
       "cancel": "לְבַטֵל",
-      "delete": "לִמְחוֹק"
+      "delete": "לִמְחוֹק",
+      "go_back": "לַחֲזוֹר",
+      "go_home": "עבור אל הבית"
     },
     "logout": "התנתקות",
     "table": "טבלה",
@@ -102,6 +104,7 @@
     "subdomain": "דומיין משנה",
     "roles": "תפקידים",
     "role": "תַפְקִיד",
+    "select_role": "בחר תפקיד",
     "assign_permissions": "הקצה הרשאות",
     "users": "משתמשים",
     "user_string": "מִשׁתַמֵשׁ",
@@ -119,6 +122,14 @@
     "saved_successfully": "נשמר בהצלחה",
     "deleted_successfully": "נמחק בהצלחה",
     "created_successfully": "נוצר בהצלחה",
-    "updated_successfully": "עודכן בהצלחה"
+    "updated_successfully": "עודכן בהצלחה",
+    "products": "מוצרים",
+    "not_found": "עמוד לא נמצא",
+    "not_found_text": "מצטערים, הדף שאתה מחפש לא קיים.",
+    "unauthorized": "גישה לא מורשית",
+    "unauthorized_text": "מצטערים, אין לך הרשאה לצפות בדף זה.",
+    "product": "מוּצָר",
+    "edit_product": "ערוך מוצר",
+    "add_new_product": "הוסף מוצר חדש"
   }
 }
