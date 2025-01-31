@@ -385,8 +385,11 @@ class UserEditView(APIView):
             user = User.objects.select_related('profile').get(id=id)
             tenant_user = TenantUser.objects.filter(tenant_id=tenant_id, user_id=id).first()
             group = None
+
+            is_admin = False
             if tenant_user:
                 group=tenant_user.group_id
+                is_admin = tenant_user.is_admin
             # user_group = user.groups.first()
             # group = user_group.id if user_group else None
 
@@ -397,6 +400,7 @@ class UserEditView(APIView):
             user_data = serializer.data
             user_data.profile = profile_serializer.data
             user_data['role_group'] = group
+            user_data['is_admin'] = is_admin
 
             # Return the serialized data in the response
             return Response({'user': user_data, 'profile': profile_serializer.data}, status=status.HTTP_200_OK)
@@ -995,7 +999,7 @@ class UsersListView(BaseDatatableView):
         tenant_id = self.request.auth_user.tenant_id if self.request.auth_user.tenant_id else 0
 
         return User.objects.filter(tenant_users__tenant_id=tenant_id).values(
-            'id', 'first_name', 'last_name', 'email', 'is_active', 'date_joined', 'tenant_users__group__name'
+            'id', 'first_name', 'last_name', 'email', 'is_active', 'date_joined', 'tenant_users__group__name', 'tenant_users__is_admin'
         )
 
     def filter_queryset(self, qs):    
@@ -1042,7 +1046,8 @@ class UsersListView(BaseDatatableView):
                 'email': user['email'],
                 'is_active': user['is_active'],
                 'date_joined': user['date_joined'],
-                'role': user.get('tenant_users__group__name', '')  # Use .get() to avoid KeyError
+                'is_admin': user.get('tenant_users__is_admin', False),
+                'role': 'Admin' if user.get('tenant_users__is_admin', False) is True else user.get('tenant_users__group__name', '')  # Use .get() to avoid KeyError
             }
             for user in qs
         ]
