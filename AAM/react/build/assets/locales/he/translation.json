@@ -60,12 +60,16 @@
       "username": {
         "required": "שם משתמש נדרש",
         "not_unique": "שם משתמש זה כבר בשימוש. אנא בחר שם אחר.",
-        "space_not_allowed": "אסור רווח בשם המשתמש"
+        "space_not_allowed": "אסור רווח בשם המשתמש",
+        "already_created": "שם משתמש כבר קיים.",
+        "not_unique_create_new_user": "שם המשתמש הזה כבר בשימוש. אתה יכול להשתמש בזה על ידי יצירת משתמש חדש."
       },
       "email": {
         "required": "דוא\"ל נדרש",
         "invalid": "אנא הזן כתובת דוא\"ל חוקית",
-        "not_unique": "דואר אלקטרוני זה כבר בשימוש. אנא בחר כתובת אחרת."
+        "not_unique": "דואר אלקטרוני זה כבר בשימוש. אנא בחר כתובת אחרת.",
+        "already_created": "דוא\"ל כבר קיים.",
+        "not_unique_create_new_user": "האימייל הזה כבר בשימוש. אתה יכול להשתמש בזה על ידי יצירת משתמש חדש."
       },
       "password": {
         "required": "סיסמה נדרשת",
@@ -97,6 +101,7 @@
     "subdomain": "דומיין משנה",
     "roles": "תפקידים",
     "role": "תַפְקִיד",
+    "select_role": "בחר תפקיד",
     "assign_permissions": "הקצה הרשאות",
     "hash_id": "#ID",
     "name": "שֵׁם",
@@ -109,6 +114,12 @@
     "mobile": "נייד",
     "humans": "בני אדם",
     "human": "אֶנוֹשִׁי",
-    "add_new_human": "הוסף אדם חדש"
+    "add_new_human": "הוסף אדם חדש",
+    "users": "משתמשים",
+    "user_string": "מִשׁתַמֵשׁ",
+    "saved_successfully": "נשמר בהצלחה",
+    "deleted_successfully": "נמחק בהצלחה",
+    "created_successfully": "נוצר בהצלחה",
+    "updated_successfully": "עודכן בהצלחה"
   }
 }

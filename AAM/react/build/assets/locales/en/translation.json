@@ -61,12 +61,16 @@
       "username": {
         "required": "Username is required",
         "not_unique": "This username is already in use. Please choose another one.",
-        "space_not_allowed": "Space is not allowed in username."
+        "space_not_allowed": "Space is not allowed in username.",
+        "already_created": "Username already exists.",
+        "not_unique_create_new_user": "This username is already in use. You can use this by create new user."
       },
       "email": {
         "required": "Email is required",
         "invalid": "Please enter a valid email address",
-        "not_unique": "This email is already in use. Please choose another one."
+        "not_unique": "This email is already in use. Please choose another one.",
+        "already_created": "Email already exists.",
+        "not_unique_create_new_user": "This email is already in use. You can use this by create new user."
       },
       "password": {
         "required": "Password is required",
@@ -98,6 +102,7 @@
     "subdomain": "Subdomain",
     "roles": "Roles",
     "role": "Role",
+    "select_role": "Select Role",
     "assign_permissions": "Assign Permissions",
     "hash_id": "#ID",
     "name": "Name",
@@ -110,6 +115,12 @@
     "mobile": "Mobile",
     "humans": "Humans",
     "human": "Human",
-    "add_new_human": "Add New Human"
+    "add_new_human": "Add New Human",
+    "users": "Users",
+    "user_string": "User",
+    "saved_successfully": "Saved successfully.",
+    "deleted_successfully": "Deleted successfully.",
+    "created_successfully": "Created successfully.",
+    "updated_successfully": "Updated successfully."
   }
 }

@@ -286,10 +286,10 @@ class SetAuthentication(APIView):
                     if is_superuser:
                         return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie,"message": "Cookies set successfully!"}, status=200)
                     else:
-                        tenant_user = TenantUser.objects.filter(user_id=user_id, tenant_id=0).exists()
+                        tenant_user = TenantUser.objects.filter(user_id=user_id, tenant_id=None).exists()
                         
                         if tenant_user:
-                            ref_token = RefreshTokenObtainPairOnDomainShift.get_token(user, 0)
+                            ref_token = RefreshTokenObtainPairOnDomainShift.get_token(user, None)
                             if ref_token:
                                 refresh = ref_token
                                 new_access = str(refresh.access_token)
@@ -383,7 +383,7 @@ class UserEditView(APIView):
             if self.request.auth_user.tenant_id:
                 tenant_id = self.request.auth_user.tenant_id
             user = User.objects.select_related('profile').get(id=id)
-            tenant_user = TenantUser.objects.filter(tenant_id=tenant_id, user_id=id).first()
+            tenant_user = TenantUser.objects.filter(tenant_id = None if tenant_id == 0 or tenant_id is None else tenant_id, user_id=id).first()
             group = None
 
             is_admin = False
@@ -997,26 +997,24 @@ class CreateEntityAndAssignTable(APIView):
         
 class UsersListView(BaseDatatableView):
     model = User
-    columns = ['id', 'first_name', 'last_name', 'email', 'is_active', 'date_joined', 'tenant_users__group__name']
-    searchable_columns = ['id', 'first_name', 'last_name', 'email', 'date_joined', 'tenant_users__group__name']
-    order_columns = ['id', 'first_name', 'last_name', 'email', 'is_active', 'date_joined', 'tenant_users__group__name']
+    columns = ['user__id', 'user__first_name', 'user__last_name', 'user__email', 'user__is_active', 'user__date_joined', 'group__name']
+    searchable_columns = ['user__id', 'user__first_name', 'user__last_name', 'user__email', 'user__date_joined', 'group__name']
+    order_columns = ['user__id', 'user__first_name', 'user__last_name', 'user__email', 'user__is_active', 'user__date_joined', 'group__name']
 
     def get_initial_queryset(self):  
         tenant_id = self.request.auth_user.tenant_id if self.request.auth_user.tenant_id else 0
 
-        return User.objects.filter(tenant_users__tenant_id=tenant_id).values(
-            'id', 'first_name', 'last_name', 'email', 'is_active', 'date_joined', 'username', 'tenant_users__group__name', 'tenant_users__is_admin'
-        )
+        return TenantUser.objects.filter(tenant_id = None if tenant_id == 0 or tenant_id is None else tenant_id ).select_related('user').values('user__id', 'user__first_name', 'user__last_name', 'user__email', 'user__is_active', 'user__date_joined', 'user__username', 'group__name', 'is_admin')
 
     def filter_queryset(self, qs):    
         search_value = self.request.GET.get('search[value]', '').strip()
         if search_value:
             qs = qs.filter(
-                Q(first_name__icontains=search_value) |   
-                Q(last_name__icontains=search_value) |
-                Q(email__icontains=search_value) |   
-                Q(date_joined__icontains=search_value) |
-                Q(tenant_users__group__name__icontains=search_value)
+                Q(user__first_name__icontains=search_value) |   
+                Q(user__last_name__icontains=search_value) |
+                Q(user__email__icontains=search_value) |   
+                Q(user__date_joined__icontains=search_value) |
+                Q(group__name__icontains=search_value)
             )
         return qs
     
@@ -1024,16 +1022,16 @@ class UsersListView(BaseDatatableView):
         order = self.request.GET.get("order[0][column]")
         direction = self.request.GET.get("order[0][dir]", "asc")
         
-        qs = qs.order_by("-id")
+        qs = qs.order_by("-user__id")
 
         order_map = {
-            "id": "id",
-            "first_name": "first_name",
-            "last_name": "last_name",
-            "email": "email",
-            "is_active": "is_active",
-            "date_joined": "date_joined",
-            "role": "tenant_users__group__name",
+            "id": "user__id",
+            "first_name": "user__first_name",
+            "last_name": "user__last_name",
+            "email": "user__email",
+            "is_active": "user__is_active",
+            "date_joined": "user__date_joined",
+            "role": "group__name",
         }
 
         if order in order_map:
@@ -1046,15 +1044,15 @@ class UsersListView(BaseDatatableView):
         # qs is a list of dictionaries because of .values()
         return [
             {
-                'id': user['id'],
-                'first_name': user['first_name'],
-                'last_name': user['last_name'],
-                'email': user['email'],
-                'is_active': user['is_active'],
-                'date_joined': user['date_joined'],
-                'username': user['username'],
-                'is_admin': user.get('tenant_users__is_admin', False),
-                'role': 'Admin' if user.get('tenant_users__is_admin', False) is True else user.get('tenant_users__group__name', '')  # Use .get() to avoid KeyError
+                'id': user['user__id'],
+                'first_name': user['user__first_name'],
+                'last_name': user['user__last_name'],
+                'email': user['user__email'],
+                'is_active': user['user__is_active'],
+                'date_joined': user['user__date_joined'],
+                'username': user['user__username'],
+                'is_admin': user['is_admin'],
+                'role': 'Admin' if user['is_admin'] is True else user.get('group__name', '')  # Use .get() to avoid KeyError
             }
             for user in qs
         ]
@@ -1073,18 +1071,12 @@ class CreateTenantUser(APIView):
             if serializer.is_valid():
                 user = serializer.save()
                 if user:
-                    # if role_id:
-                    #     try:
-                    #         group = Group.objects.get(id=role_id)
-                    #         user.groups.add(group)
-                    #     except Group.DoesNotExist:
-                    #         return Response({"error": "Invalid group ID."}, status=status.HTTP_400_BAD_REQUEST)
                     
                     UserProfile.objects.update_or_create(user=user)
 
                     TenantUser.objects.create(
                         user_id=user.id,
-                        tenant_id=tenant_id,
+                        tenant_id=None if tenant_id == 0 else tenant_id,
                         created_by_id=request.auth_user.id,
                         group_id=role_id
                     )
@@ -1298,10 +1290,15 @@ class UpdateTenantUser(APIView):
         if request:
             if request.auth_user:
                 if request.auth_user.tenant_id:
-                    tenant_id = request.auth_user.tenant_id       
-    
-    
-        if tenant_id:
+                    tenant_id = request.auth_user.tenant_id
+                    
+        if tenant_id == 0 or tenant_id is None:            
+            tenant_users = TenantUser.objects.filter(tenant_id=None).select_related('user')   
+            user_ids = set()         
+            for tenant_user in tenant_users:
+                u = tenant_user.user
+                user_ids.add(u.id)   
+        elif tenant_id:
             tenant_users = TenantUser.objects.filter(tenant_id=tenant_id).select_related('user')   
             user_ids = set()         
             for tenant_user in tenant_users:
@@ -1444,7 +1441,7 @@ class Dashboard(APIView):
                 admin_serialize = UserSerializer(auth_user)
                 tenants_array['admin'] = admin_serialize.data
             else:
-                is_admin_user = TenantUser.objects.filter(user_id=user_data.id, tenant_id=0).exists()
+                is_admin_user = TenantUser.objects.filter(user_id=user_data.id, tenant_id=None).exists()
                 if is_admin_user:
                     admin = User.objects.filter(id=1, is_superuser=1, is_staff=1).first()
                     if admin:
@@ -1477,11 +1474,11 @@ class BindExistingUser(APIView):
 
     def post(self, request, *args, **kwargs):
         try: 
-            
-            if request.data.get('username'):
-                user = User.objects.filter(username=request.data.get('username')).first()
-            elif request.data.get('email'):
-                user = User.objects.filter(email=request.data.get('email')).first()
+           
+            if request.data.get('username').strip():
+                user = User.objects.filter(username__iexact=request.data.get('username').strip()).first()
+            elif request.data.get('email').strip():
+                user = User.objects.filter(email__iexact=request.data.get('email').strip()).first()
             
             if not user:
                 return Response({'message': 'User not found!'}, status=status.HTTP_404_NOT_FOUND)
@@ -1489,6 +1486,10 @@ class BindExistingUser(APIView):
             if user:              
                 role_group = request.data.get('role', None)
                 tenant_id = getattr(request.auth_user, 'tenant_id', None)
+                
+                tenant_id = None
+                if request.auth_user.tenant_id and request.auth_user.tenant_id != 0:
+                    tenant_id = request.auth_user.tenant_id 
                 
                 tenant_parent_id = 0
                 if request.auth_user.tenant_parent_id:

@@ -406,3 +406,167 @@ class EditProfile(APIView):
             return JsonResponse(response.json(), status=response.status_code)
         except requests.exceptions.RequestException as e:
             return JsonResponse({"error": "Failed to connect to the API server.", "details": str(e)}, status=503)
+        
+class UsersListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        ulm_api = settings.ULM_API_URL + "api/"
+        api_url = ulm_api + "get_users/"
+
+        search_value = request.GET.get('search[value]', '').strip()
+        order_column = request.GET.get("order[0][column]", None)
+        order_dir = request.GET.get("order[0][dir]", "asc")
+        start = request.GET.get('start', 0)
+        length = request.GET.get('length', 10)
+
+        params = {
+            'search[value]': search_value,
+            'order[0][column]': order_column,
+            'order[0][dir]': order_dir,
+            'start': start,
+            'length': length,
+        }
+
+        # headers = request.headers
+        token = ''
+        auth_header = request.headers.get('Authorization')    
+        if auth_header:            
+            parts = auth_header.split()
+            if len(parts) == 2:
+                token = parts[1]
+                token = token   
+        
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json',          
+        }
+
+        try:
+            response = requests.get(api_url, params=params, headers=headers)                          
+            if response.status_code == 200:
+                data = response.json()                             
+                return JsonResponse(data, status=status.HTTP_200_OK)
+            else:                
+                return Response({"error": "Failed to fetch data", "status_code": response.status_code}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+        except requests.RequestException as e:           
+            return Response({"error": str(e)}, status=status.HTTP_403_FORBIDDEN)
+        
+class UserCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        ulm_api = settings.ULM_API_URL + "api/"
+        api_url = ulm_api + "create-tenant-user/"
+        payload = request.data
+
+        token = ''
+        auth_header = request.headers.get('Authorization')    
+        if auth_header:            
+            parts = auth_header.split()
+            if len(parts) == 2:
+                token = parts[1]
+                token = token   
+        
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json',          
+        }
+        try:
+            response = requests.post(api_url, json=payload, headers=headers)
+            return JsonResponse(response.json(), status=response.status_code)
+            
+        except requests.exceptions.RequestException as e:
+            return JsonResponse({"error": "Failed to connect to the API server.", "details": str(e)}, status=503)
+        
+class UserEditView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, id, format=None):
+        ulm_api = settings.ULM_API_URL + "api/"
+        api_url = ulm_api + f"person/{id}/edit/"
+        token = ''
+        auth_header = request.headers.get('Authorization')    
+        if auth_header:            
+            parts = auth_header.split()
+            if len(parts) == 2:
+                token = parts[1]
+                token = token
+        
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json',          
+        }
+
+        try:
+            response = requests.get(api_url, headers=headers)
+               
+            if response.status_code == 200:
+                data = response.json()   
+                                         
+                return JsonResponse(data, status=status.HTTP_200_OK)
+            else:                
+                return Response({"error": "Failed to fetch data", "status_code": response.status_code}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+        except requests.RequestException as e:           
+            return Response({"error": str(e)}, status=status.HTTP_403_FORBIDDEN)
+        
+class UserUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id, *args, **kwargs):
+        ulm_api = settings.ULM_API_URL + "api/"
+        api_url = f"{ulm_api}user/{id}/edit/"
+        payload = request.data
+        token = ''
+        auth_header = request.headers.get('Authorization')    
+        if auth_header:            
+            parts = auth_header.split()
+            if len(parts) == 2:
+                token = parts[1]
+                token = token   
+        
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json',          
+        }
+        try:
+            response = requests.post(api_url, json=payload, headers=headers)
+            return JsonResponse(response.json(), status=response.status_code)
+        except requests.exceptions.RequestException as e:
+            return JsonResponse({"error": "Failed to connect to the API server.", "details": str(e)}, status=503)
+        
+class BindExistingUser(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        ulm_api = settings.ULM_API_URL + "api/"
+        api_url = f"{ulm_api}bind-user/"
+        
+        token = ''
+        auth_header = request.headers.get('Authorization')    
+        if auth_header:            
+            parts = auth_header.split()
+            if len(parts) == 2:
+                token = parts[1]
+                token = token   
+        
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json',          
+        }
+        
+        data = request.data
+        
+        try:
+         
+            response = requests.post(api_url, json=data, headers=headers)
+          
+            if response.status_code == 201:      
+                return JsonResponse(response.json(), status=response.status_code)
+            else:
+                return JsonResponse({"message": "Something went wrong."}, status=response.status_code)
+        except requests.exceptions.RequestException as e:
+            return JsonResponse({"message": "Failed to connect to the API server.", "details": str(e)}, status=503)
+

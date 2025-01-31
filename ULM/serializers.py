@@ -37,13 +37,19 @@ class UserSerializer(serializers.ModelSerializer):
                     tenant_id = request.auth_user.tenant_id
         if not username:
             errors.setdefault('username', []).append(ValidationMessages.USERNAME_REQUIRED)
-        elif tenant_id:
+        elif tenant_id == 0 or tenant_id is None:
+            tenant_users = TenantUser.objects.filter(tenant_id=None).select_related('user')
+            for tenant_user in tenant_users:   
+                user = tenant_user.user
+                if user and user.username.lower() == username.lower():
+                    errors.setdefault('username', []).append(ValidationMessages.USERNAME_ALREADY_CREATED) 
+        elif tenant_id and tenant_id is not None and tenant_id != 0:
             tenant_users = TenantUser.objects.filter(tenant_id=tenant_id).select_related('user')
             for tenant_user in tenant_users:   
                 user = tenant_user.user
-                if(user.username.lower() == username.lower()):
+                if user and user.username.lower() == username.lower():
                     errors.setdefault('username', []).append(ValidationMessages.USERNAME_ALREADY_CREATED)
-        elif User.objects.filter(username=username).exists():
+        elif User.objects.filter(username__iexact=username).exists():
             errors.setdefault('username', []).append(ValidationMessages.USERNAME_NOT_UNIQUE)
         elif ' ' in username:
             errors.setdefault('username', []).append(ValidationMessages.USERNAME_NO_SPACES)
@@ -52,18 +58,24 @@ class UserSerializer(serializers.ModelSerializer):
         email = data.get('email', '').strip()
         if not email:
             errors.setdefault('email', []).append(ValidationMessages.EMAIL_REQUIRED)
-        elif tenant_id:
+        elif tenant_id == 0 or tenant_id is None:
+            tenant_users = TenantUser.objects.filter(tenant_id=None).select_related('user')
+            for tenant_user in tenant_users:   
+                user = tenant_user.user
+                if user and user.email.lower() == email.lower():
+                    errors.setdefault('email', []).append(ValidationMessages.EMAIL_ALREADY_CREATED)       
+        elif tenant_id and tenant_id is not None and tenant_id != 0:
             tenant_users = TenantUser.objects.filter(tenant_id=tenant_id).select_related('user')            
             for tenant_user in tenant_users:
                 user = tenant_user.user
                 if user and user.email.lower() == email.lower():                       
-                    errors.setdefault('email', []).append(ValidationMessages.EMAIL_ALREADY_CREATED)  
+                    errors.setdefault('email', []).append(ValidationMessages.EMAIL_ALREADY_CREATED)
         email_validator = EmailValidator()
         try:
             email_validator(email)
         except ValidationError:
             errors.setdefault('email', []).append(ValidationMessages.EMAIL_INVALID)
-        if User.objects.filter(email=email).exists():
+        if User.objects.filter(email__iexact=email).exists():
             errors.setdefault('email', []).append(ValidationMessages.EMAIL_NOT_UNIQUE)
 
         # Validate password
