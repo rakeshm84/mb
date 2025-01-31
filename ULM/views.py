@@ -997,14 +997,14 @@ class CreateEntityAndAssignTable(APIView):
         
 class UsersListView(BaseDatatableView):
     model = User
-    columns = ['user__id', 'user__first_name', 'user__last_name', 'user__email', 'user__is_active', 'user__date_joined', 'group__name']
-    searchable_columns = ['user__id', 'user__first_name', 'user__last_name', 'user__email', 'user__date_joined', 'group__name']
-    order_columns = ['user__id', 'user__first_name', 'user__last_name', 'user__email', 'user__is_active', 'user__date_joined', 'group__name']
+    columns = ['id', 'user__first_name', 'user__last_name', 'user__email', 'user__is_active', 'user__date_joined', 'group__name']
+    searchable_columns = ['id', 'user__first_name', 'user__last_name', 'user__email', 'user__date_joined', 'group__name']
+    order_columns = ['id', 'user__first_name', 'user__last_name', 'user__email', 'user__is_active', 'user__date_joined', 'group__name']
 
     def get_initial_queryset(self):  
         tenant_id = self.request.auth_user.tenant_id if self.request.auth_user.tenant_id else 0
 
-        return TenantUser.objects.filter(tenant_id = None if tenant_id == 0 or tenant_id is None else tenant_id ).select_related('user').values('user__id', 'user__first_name', 'user__last_name', 'user__email', 'user__is_active', 'user__date_joined', 'user__username', 'group__name', 'is_admin')
+        return TenantUser.objects.filter(tenant_id = None if tenant_id == 0 or tenant_id is None else tenant_id ).select_related('user').values('user__id', 'user__first_name', 'user__last_name', 'user__email', 'user__is_active', 'user__date_joined', 'user__username', 'group__name', 'is_admin', 'id')
 
     def filter_queryset(self, qs):    
         search_value = self.request.GET.get('search[value]', '').strip()
@@ -1022,10 +1022,10 @@ class UsersListView(BaseDatatableView):
         order = self.request.GET.get("order[0][column]")
         direction = self.request.GET.get("order[0][dir]", "asc")
         
-        qs = qs.order_by("-user__id")
+        qs = qs.order_by("-id")
 
         order_map = {
-            "id": "user__id",
+            "id": "id",
             "first_name": "user__first_name",
             "last_name": "user__last_name",
             "email": "user__email",
@@ -1044,7 +1044,7 @@ class UsersListView(BaseDatatableView):
         # qs is a list of dictionaries because of .values()
         return [
             {
-                'id': user['user__id'],
+                'id': user['id'],
                 'first_name': user['user__first_name'],
                 'last_name': user['user__last_name'],
                 'email': user['user__email'],
@@ -1475,9 +1475,9 @@ class BindExistingUser(APIView):
     def post(self, request, *args, **kwargs):
         try: 
            
-            if request.data.get('username').strip():
+            if request.data.get('username'):
                 user = User.objects.filter(username__iexact=request.data.get('username').strip()).first()
-            elif request.data.get('email').strip():
+            elif request.data.get('email'):
                 user = User.objects.filter(email__iexact=request.data.get('email').strip()).first()
             
             if not user:
