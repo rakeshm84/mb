@@ -999,7 +999,7 @@ class UsersListView(BaseDatatableView):
         tenant_id = self.request.auth_user.tenant_id if self.request.auth_user.tenant_id else 0
 
         return User.objects.filter(tenant_users__tenant_id=tenant_id).values(
-            'id', 'first_name', 'last_name', 'email', 'is_active', 'date_joined', 'tenant_users__group__name', 'tenant_users__is_admin'
+            'id', 'first_name', 'last_name', 'email', 'is_active', 'date_joined', 'username', 'tenant_users__group__name', 'tenant_users__is_admin'
         )
 
     def filter_queryset(self, qs):    
@@ -1046,6 +1046,7 @@ class UsersListView(BaseDatatableView):
                 'email': user['email'],
                 'is_active': user['is_active'],
                 'date_joined': user['date_joined'],
+                'username': user['username'],
                 'is_admin': user.get('tenant_users__is_admin', False),
                 'role': 'Admin' if user.get('tenant_users__is_admin', False) is True else user.get('tenant_users__group__name', '')  # Use .get() to avoid KeyError
             }
