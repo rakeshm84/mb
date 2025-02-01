@@ -284,12 +284,22 @@ class SetAuthentication(APIView):
                 permissions = user_data.get("permissions", [])
                 if platform == 'admin':
                     if is_superuser:
-                        return JsonResponse({"auth_token":auth_cookie ,"refresh_token":refresh_cookie,"message": "Cookies set successfully!"}, status=200)
+                        ref_token = RefreshTokenObtainPairOnDomainShift.get_token(user)
+                        if ref_token:
+                            refresh = ref_token
+                            new_access = str(refresh.access_token)
+                            new_refresh = str(refresh)
+                            access_token = AccessToken(new_access)
+                            payload = access_token.payload
+                            permissions = payload.get("permissions", [])
+                            new_access = str(refresh.access_token)
+                            new_refresh = str(refresh)
+                            return JsonResponse({"auth_token":new_access , "refresh_token":new_refresh, "permissions": permissions, "message": "Cookies set successfully!"}, status=200)
                     else:
                         tenant_user = TenantUser.objects.filter(user_id=user_id, tenant_id=None).exists()
                         
                         if tenant_user:
-                            ref_token = RefreshTokenObtainPairOnDomainShift.get_token(user, None)
+                            ref_token = RefreshTokenObtainPairOnDomainShift.get_token(user)
                             if ref_token:
                                 refresh = ref_token
                                 new_access = str(refresh.access_token)
@@ -997,11 +1007,16 @@ class CreateEntityAndAssignTable(APIView):
         
 class UsersListView(BaseDatatableView):
     model = User
-    columns = ['id', 'user__first_name', 'user__last_name', 'user__email', 'user__is_active', 'user__date_joined', 'group__name']
+    columns = ['id', 'user__id', 'user__first_name', 'user__last_name', 'user__email', 'user__is_active', 'user__date_joined', 'group__name']
     searchable_columns = ['id', 'user__first_name', 'user__last_name', 'user__email', 'user__date_joined', 'group__name']
     order_columns = ['id', 'user__first_name', 'user__last_name', 'user__email', 'user__is_active', 'user__date_joined', 'group__name']
 
-    def get_initial_queryset(self):  
+    # def dispatch(self, request, *args, **kwargs):
+    #     if not request.auth_user.has_permission('user.can_view'):
+    #         return JsonResponse({"error": "Unauthorized Access!"}, status=status.HTTP_403_FORBIDDEN)
+    #     return super().dispatch(request, *args, **kwargs)
+    
+    def get_initial_queryset(self):
         tenant_id = self.request.auth_user.tenant_id if self.request.auth_user.tenant_id else 0
 
         return TenantUser.objects.filter(tenant_id = None if tenant_id == 0 or tenant_id is None else tenant_id ).select_related('user').values('user__id', 'user__first_name', 'user__last_name', 'user__email', 'user__is_active', 'user__date_joined', 'user__username', 'group__name', 'is_admin', 'id')
@@ -1044,7 +1059,8 @@ class UsersListView(BaseDatatableView):
         # qs is a list of dictionaries because of .values()
         return [
             {
-                'id': user['id'],
+                'id': user['user__id'],
+                'tenant_user_id': user['id'],
                 'first_name': user['user__first_name'],
                 'last_name': user['user__last_name'],
                 'email': user['user__email'],
