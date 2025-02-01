@@ -1384,7 +1384,7 @@ class UpdateTenantUser(APIView):
         if not user:
             return Response({"message": "Person not found"}, status=status.HTTP_404_NOT_FOUND)
         
-        tenant_id = 0
+        tenant_id = None
         if request:
             if request.auth_user:
                 if request.auth_user.tenant_id:
