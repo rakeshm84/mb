@@ -68,20 +68,23 @@ class PermissionsMeta(models.Model):
     
 
 def custom_has_permission(self, perm):
-    if self.is_tenant:
+    if not self.is_admin:
         return perm in self.permissions
+    else:
+        return True
     
 def is_admin_user(self):
     is_admin = False
-    if hasattr(self, 'is_admin'):
-        is_admin = self.is_admin
-    elif hasattr(self, 'tenant_id'):
-        tenant_user = TenantUser.objects.get(user_id=self.id, tenant_id=self.tenant_id)
-        if tenant_user:
-            is_admin = tenant_user.is_admin
-    
     if hasattr(self, 'is_superuser') and self.is_superuser:
         is_admin = True
+    else:
+        if hasattr(self, 'is_admin'):
+            is_admin = self.is_admin
+        elif hasattr(self, 'tenant_id'):
+            tenant_user = TenantUser.objects.get(user_id=self.id, tenant_id=None if self.tenant_id == 0 else self.tenant_id)
+            if tenant_user:
+                is_admin = tenant_user.is_admin
+    
     return is_admin
 
 

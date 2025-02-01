@@ -131,6 +131,7 @@
     "unauthorized_text": "Sorry, you don't have permission to view this page.",
     "product": "Product",
     "edit_product": "Edit Product",
-    "add_new_product": "Add New Product"
+    "add_new_product": "Add New Product",
+    "edit_profile" : "Edit Profile"
   }
 }

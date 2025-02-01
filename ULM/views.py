@@ -15,6 +15,8 @@ from django.db.models import OuterRef, Subquery, Value, Func, F, JSONField
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from .validation_messages import ValidationMessages
 from ULM.signals import set_tenant
+from django.utils.timezone import now
+from .serializers import RefreshTokenObtainPairOnDomainShift
 
 import logging
 import time
@@ -30,6 +32,25 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 enable_logging = settings.ENABLE_APP_LOG
+
+def set_site_cookies(response, access, refresh):
+    response.set_cookie(
+        'auth_token', access,
+        max_age=86400,                        
+        httponly=True,                     
+        secure=True,                      
+        samesite='None'
+    )
+    response.set_cookie(
+        'refresh_token', 
+        refresh,
+        max_age=86400,
+        httponly=True,                     
+        secure=True,                      
+        samesite='None'
+    )
+
+    return response
 
 class AuthenticationView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
@@ -66,22 +87,22 @@ class AuthenticationView(TokenObtainPairView):
                         {"detail": "Access denied!"},
                         status=status.HTTP_403_FORBIDDEN,
                     )
-                
-                response.set_cookie(
-                    'auth_token', response.data.get('access'),
-                    max_age=86400,                        
-                    httponly=True,                     
-                    secure=True,                      
-                    samesite='None'
-                )
-                response.set_cookie(
-                    'refresh_token', 
-                    response.data.get('refresh'),
-                    max_age=86400,
-                    httponly=True,                     
-                    secure=True,                      
-                    samesite='None'
-                )
+                response = set_site_cookies(response, response.data.get('access'), response.data.get('refresh'))
+                # response.set_cookie(
+                #     'auth_token', response.data.get('access'),
+                #     max_age=86400,                        
+                #     httponly=True,                     
+                #     secure=True,                      
+                #     samesite='None'
+                # )
+                # response.set_cookie(
+                #     'refresh_token', 
+                #     response.data.get('refresh'),
+                #     max_age=86400,
+                #     httponly=True,                     
+                #     secure=True,                      
+                #     samesite='None'
+                # )
 
                 next_url = ''
                 if user.is_superuser:
@@ -187,21 +208,22 @@ class SetAuthentication(APIView):
             return JsonResponse({"error": "Tokens are required!"}, status=400)
         
         response = JsonResponse({"message": "Cookies set successfully!"})
-        response.set_cookie(
-            'auth_token', access_token,
-            max_age=86400,                        
-            httponly=True,
-            secure=True,                      
-            samesite='None'
-        )
-        response.set_cookie(
-            'refresh_token', 
-            refresh_token,
-            max_age=86400,
-            httponly=True,                     
-            secure=True,                      
-            samesite='None'
-        )
+        response = set_site_cookies(response, access_token, refresh_token)
+        # response.set_cookie(
+        #     'auth_token', access_token,
+        #     max_age=86400,                        
+        #     httponly=True,
+        #     secure=True,                      
+        #     samesite='None'
+        # )
+        # response.set_cookie(
+        #     'refresh_token', 
+        #     refresh_token,
+        #     max_age=86400,
+        #     httponly=True,                     
+        #     secure=True,                      
+        #     samesite='None'
+        # )
         
         return response
     
@@ -247,28 +269,28 @@ class SetAuthentication(APIView):
                 new_token = self.get_new_access_token(refresh_token)
                 access = new_token.get('access')
                 refresh = new_token.get('refresh')
-                response.set_cookie(
-                    'auth_token', access,
-                    max_age=86400,                        
-                    httponly=True,                     
-                    secure=True,                      
-                    samesite='None'
-                )
-                response.set_cookie(
-                    'refresh_token', 
-                    refresh,
-                    max_age=86400,
-                    httponly=True,                     
-                    secure=True,                      
-                    samesite='None'
-                )
+                response = set_site_cookies(response, access, refresh)
+                # response.set_cookie(
+                #     'auth_token', access,
+                #     max_age=86400,                        
+                #     httponly=True,                     
+                #     secure=True,                      
+                #     samesite='None'
+                # )
+                # response.set_cookie(
+                #     'refresh_token', 
+                #     refresh,
+                #     max_age=86400,
+                #     httponly=True,                     
+                #     secure=True,                      
+                #     samesite='None'
+                # )
                 access_token = AccessToken(access)
 
             except Exception as refresh_error:
                 # If the refresh token is also invalid/expired
                 return JsonResponse({"error": "Invalid or expired tokens!"}, status=401)
         if access_token:
-            from .serializers import RefreshTokenObtainPairOnDomainShift
             platform = request.GET.get('platform')
             try:
                 user_data = access_token.payload
@@ -387,6 +409,10 @@ class UserEditView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, id, format=None):
+        permission = request.GET.get('permission', None)
+        if permission:
+            if not request.auth_user.has_permission(permission):
+                return JsonResponse({"error": "Unauthorized Access!"}, status=status.HTTP_403_FORBIDDEN)
         try:
             # Fetch the person object using the id
             tenant_id = 0
@@ -421,62 +447,96 @@ class UserEditView(APIView):
             return Response({"message": "An error occurred.", "error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
     def post(self, request, id, *args, **kwargs):
-        user = User.objects.filter(id=id).select_related('profile').first()
-
-        tenant_id = None
-        if self.request.auth_user.tenant_id:
-            tenant_id = self.request.auth_user.tenant_id
-        
-        user.tenant_id = tenant_id  
-
-        if user:
-            user.first_name = request.data.get('first_name', user.first_name)
-            user.last_name = request.data.get('last_name', user.last_name)
-            user.email = request.data.get('email', user.email)
-            if not hasattr(user, 'profile'):
-                user.profile = UserProfile.objects.create(user=user)
-            user.profile.phone_number = request.data.get('phone_number', user.profile.phone_number)
-            user.profile.address = request.data.get('address', user.profile.address)
-            user.profile.date_of_birth = request.data.get('date_of_birth', user.profile.date_of_birth)
-            user.profile.desc = request.data.get('desc', user.profile.desc)
-            user.save()
-            user.profile.save()
-
-            serializer = UserSerializer(user)
-
-            userData = {
-                'id': user.id,
-                'username': user.username,
-                'email': user.email,
-                'first_name': user.first_name,
-                'last_name': user.last_name
-            }
-
-            # Check if the 'profile' related object exists
-            if hasattr(user, 'profile'):
-                userData.update({
-                    'phone': user.profile.phone_number,
-                    'address': user.profile.address,
-                    'dob': user.profile.date_of_birth,
-                    'lang': user.profile.language,
-                    'desc': user.profile.desc,
-                })
+        try:
+            user = User.objects.filter(id=id).select_related('profile').first()
+            tenant_id = None
+            if self.request.auth_user.tenant_id:
+                tenant_id = self.request.auth_user.tenant_id
             
-            userData.update({"is_admin": user.is_admin_user()})
 
-            return Response({"message": "Updated successfully", "user": userData}, status=status.HTTP_200_OK)
-        else:
-            return Response({"message": "Person not found"}, status=status.HTTP_404_NOT_FOUND)
+            if user:
+
+                update_session = False
+                if request.data.get('phone_number'):
+                    update_session = request.data.get('phone_number').strip() != user.profile.phone_number
+
+                user.first_name = request.data.get('first_name', user.first_name)
+                user.last_name = request.data.get('last_name', user.last_name)
+                user.email = request.data.get('email', user.email)
+                if not hasattr(user, 'profile'):
+                    user.profile = UserProfile.objects.create(user=user)
+                user.profile.phone_number = request.data.get('phone_number', user.profile.phone_number).strip()
+                user.profile.address = request.data.get('address', user.profile.address)
+                user.profile.date_of_birth = request.data.get('date_of_birth', user.profile.date_of_birth)
+                user.profile.desc = request.data.get('desc', user.profile.desc)
+
+                if update_session:
+                    user.profile.updated_at = int(now().timestamp() * 1000)
+                
+                user.save()
+                user.profile.save()
+
+                serializer = UserSerializer(user)
+
+                userData = {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name
+                }
+
+                # Check if the 'profile' related object exists
+                if hasattr(user, 'profile'):
+                    userData.update({
+                        'phone': user.profile.phone_number,
+                        'address': user.profile.address,
+                        'dob': user.profile.date_of_birth,
+                        'lang': user.profile.language,
+                        'desc': user.profile.desc,
+                    })
+
+                user.tenant_id = tenant_id  
+                
+                userData.update({"is_admin": user.is_admin_user()})
+
+                # tokens = user.get_tokens_for_user()
+                response = Response({"message": "Updated successfully", "user": userData}, status=status.HTTP_200_OK)
+                ref_token = RefreshTokenObtainPairOnDomainShift.get_token(user, tenant_id)
+                if ref_token:
+                    refresh = ref_token
+                    new_access = str(refresh.access_token)
+                    new_refresh = str(refresh)
+
+                    response = set_site_cookies(response, new_access, new_refresh)
+
+                    response = Response({"message": "Updated successfully", "user": userData, "tokens": {
+                        "refresh": new_refresh,
+                        "access": new_access,
+                    }}, status=status.HTTP_200_OK)
+
+                return response
+            else:
+                return Response({"message": "Person not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+          return Response({"message": str(e)}, status=status.HTTP_404_NOT_FOUND)
+        
 
 from django_datatables_view.base_datatable_view import BaseDatatableView
 from django.db.models import Q
 
 class PersonsListView(BaseDatatableView):
+    permission_classes=[IsAuthenticated]
     model = Tenant  # Change the model to Tenant
 
     columns = ['id', 'first_name', 'last_name', 'email', 'domain','subdomain', 'status', 'created_at']
     searchable_columns = ['first_name', 'last_name', 'email', 'domain','subdomain']
     order_columns = ['id', 'first_name', 'last_name', 'email', 'domain','subdomain', 'status', 'created_at']
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.auth_user.has_permission('tenant.can_view'):
+            return JsonResponse({"error": "Unauthorized Access!"}, status=status.HTTP_403_FORBIDDEN)
+        return super().dispatch(request, *args, **kwargs)
 
     def get_initial_queryset(self):       
         return Tenant.objects.filter(entity='human')
@@ -533,6 +593,9 @@ class CreateUser(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
+        if not request.auth_user.has_permission('tenant.can_add'):
+            return JsonResponse({"error": "Unauthorized Access!"}, status=status.HTTP_403_FORBIDDEN)
+        
         from .utils import parse_connection_string, _dsn_to_string
 
         entity = request.data.get('entity')
@@ -761,10 +824,20 @@ class CreateCustomPermission(APIView):
             return JsonResponse({"error": "Invalid model name provided."}, status=400)
         
 class RolesListView(BaseDatatableView):
+    permission_classes=[IsAuthenticated]
     model = Group
     columns = ['id', 'name']
     searchable_columns = ['id', 'name']
     order_columns = ['id', 'name']
+
+    def dispatch(self, request, *args, **kwargs):
+        page_type = request.GET.get('page_type', None)
+        if page_type != 'user_form':
+            if not request.auth_user.has_permission('group.can_view'):
+                return JsonResponse({"error": "Unauthorized Access!"}, status=status.HTTP_403_FORBIDDEN)
+            
+        return super().dispatch(request, *args, **kwargs)
+    
     def get_initial_queryset(self):  
         if enable_logging:
             request_start_time = time.time()
@@ -912,6 +985,8 @@ class GroupCreateView(APIView):
         return self.create_group(request)
 
     def create_group(self, request):
+        if not request.auth_user.has_permission('group.can_add'):
+            return JsonResponse({"errors": "Unauthorized Access!"}, status=status.HTTP_403_FORBIDDEN)
         if enable_logging:
             request_start_time = time.time()
             logger.info(f"Request Received at create_group method in  GroupCreateView: {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(request_start_time))}")
@@ -1011,10 +1086,10 @@ class UsersListView(BaseDatatableView):
     searchable_columns = ['id', 'user__first_name', 'user__last_name', 'user__email', 'user__date_joined', 'group__name']
     order_columns = ['id', 'user__first_name', 'user__last_name', 'user__email', 'user__is_active', 'user__date_joined', 'group__name']
 
-    # def dispatch(self, request, *args, **kwargs):
-    #     if not request.auth_user.has_permission('user.can_view'):
-    #         return JsonResponse({"error": "Unauthorized Access!"}, status=status.HTTP_403_FORBIDDEN)
-    #     return super().dispatch(request, *args, **kwargs)
+    def dispatch(self, request, *args, **kwargs):
+        if not request.auth_user.has_permission('user.can_view'):
+            return JsonResponse({"error": "Unauthorized Access!"}, status=status.HTTP_403_FORBIDDEN)
+        return super().dispatch(request, *args, **kwargs)
     
     def get_initial_queryset(self):
         tenant_id = self.request.auth_user.tenant_id if self.request.auth_user.tenant_id else 0
@@ -1076,6 +1151,8 @@ class UsersListView(BaseDatatableView):
 class CreateTenantUser(APIView):
     permission_classes = [IsAuthenticated]
     def post(self, request, *args, **kwargs):
+        if not request.auth_user.has_permission('user.can_add'):
+            return JsonResponse({"error": "Unauthorized Access!"}, status=status.HTTP_403_FORBIDDEN)
         try:
             serializer = UserSerializer(data=request.data, context={'request': request, 'bypass_userprofile': True})
             role_id = request.data.get('role', None)
@@ -1117,6 +1194,9 @@ class GroupUpdateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, id):
+        if not request.auth_user.has_permission('group.can_edit'):
+            return JsonResponse({"errors": "Unauthorized Access!"}, status=status.HTTP_403_FORBIDDEN)
+        
         if enable_logging:
             request_start_time = time.time()
             logger.info(f"Request Received at ULM GroupUpdateView: {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(request_start_time))}")
@@ -1297,6 +1377,8 @@ class UpdateTenantUser(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, id, *args, **kwargs):
+        if not request.auth_user.has_permission('user.can_edit'):
+            return JsonResponse({"error": "Unauthorized Access!"}, status=status.HTTP_403_FORBIDDEN)
         user = User.objects.filter(id=id).select_related('profile').first()
 
         if not user:
@@ -1399,7 +1481,7 @@ class SetLanguageView(APIView):
     permission_classes = [IsAuthenticated]  
 
     def post(self, request):
-        selected_language = request.data.get("language")     
+        selected_language = request.data.get("selected_language")     
         try:
             # updated_count = UserProfile.objects.filter(user=request.user.user_id).update(language=selected_language)
             user_profile, created = UserProfile.objects.get_or_create(user=request.auth_user)

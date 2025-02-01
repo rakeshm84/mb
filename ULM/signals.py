@@ -2,7 +2,7 @@ from django.db.models.signals import post_save, m2m_changed
 from django.dispatch import receiver
 from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.models import ContentType
-from .models import PermissionsMeta, Tenant
+from .models import PermissionsMeta, Tenant, UserProfile
 from threading import local
 
 
@@ -38,9 +38,11 @@ def create_permission_meta(content_type_model, model_id):
 def user_post_save(sender, instance, created, **kwargs):
     if created:  # Only for newly created records
         if instance.is_superuser == 1:
-            group, created = Group.objects.get_or_create(name="human_admin")
-            permissions = Permission.objects.filter(codename__in=['view_tenant', 'view_userprofile'])
-            group.permissions.set(permissions)
+            from django.utils.timezone import now
+            profile, created = UserProfile.objects.get_or_create(language="en", updated_at=int(now().timestamp() * 1000))
+            # group, created = Group.objects.get_or_create(name="human_admin")
+            # permissions = Permission.objects.filter(codename__in=['view_tenant', 'view_userprofile'])
+            # group.permissions.set(permissions)
         # create_permission_meta(User, instance.id)
 
 # Signal for Group model
@@ -72,12 +74,12 @@ def user_permissions_m2m_changed(sender, instance, action, pk_set, **kwargs):
 ##############################################################################################
 
 # Utility function to create a Group record
-def create_new_group_for_tenant_user(tenant):
-    group, created = Group.objects.get_or_create(name=f"{tenant.entity}_admin")
-    # permission = Permission.objects.get(codename='view_tenant')
-    # group.permissions.add(permission)
-    user = User.objects.get(id=tenant.entity_id)
-    user.groups.add(group)
+# def create_new_group_for_tenant_user(tenant):
+#     group, created = Group.objects.get_or_create(name=f"{tenant.entity}_admin")
+#     # permission = Permission.objects.get(codename='view_tenant')
+#     # group.permissions.add(permission)
+#     user = User.objects.get(id=tenant.entity_id)
+#     user.groups.add(group)
 
 # Signal for Tenant model
 # @receiver(post_save, sender=Tenant)

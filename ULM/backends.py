@@ -4,16 +4,16 @@ from .models import PermissionsMeta, TenantUser
 
 class CustomPermissionBackend(ModelBackend):
     
-    def get_all_permissions(self, user_obj, tenant_id=0):
+    def get_all_permissions(self, user_obj, tenant_id=None):
         return get_tenant_permissions(user_obj, tenant_id)
 
-    def get_user_permissions(self, user_obj, tenant_id=0):
+    def get_user_permissions(self, user_obj, tenant_id=None):
         return get_tenant_user_permissions(user_obj, tenant_id)
 
-    def get_group_permissions(self, user_obj, tenant_id=0):
+    def get_group_permissions(self, user_obj, tenant_id=None):
         return get_tenant_group_permissions(user_obj, tenant_id)
     
-    def has_perm(self, user_obj, perm, tenant_id=0):
+    def has_perm(self, user_obj, perm, tenant_id=None):
         return perm in self.get_all_permissions(user_obj, tenant_id=tenant_id)
     
 def get_tenant_permissions(user, tenant_id):
@@ -36,7 +36,7 @@ def get_tenant_user_permissions(user, tenant_id):
     """
     
     permission_ids = PermissionsMeta.objects.filter(
-        tenant_id=tenant_id,
+        tenant_id=0 if tenant_id == None else tenant_id,
         content_type__model='permission'
     ).values_list('model_id', flat=True)
 
@@ -81,7 +81,7 @@ def get_tenant_group_permissions(user, tenant_id):
 
     # Fetch groups created by the current tenant
     tenant_group_ids = PermissionsMeta.objects.filter(
-        tenant_id=tenant_id,
+        tenant_id=0 if tenant_id == None else tenant_id,
         content_type__model='group'
     ).values_list('model_id', flat=True)
 

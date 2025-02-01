@@ -30,7 +30,10 @@
       "action": "פְּעוּלָה",
       "back": "בְּחֲזָרָה",
       "search": "לְחַפֵּשׂ",
-      "cancel": "לְבַטֵל"
+      "cancel": "לְבַטֵל",
+      "delete": "לִמְחוֹק",
+      "go_back": "לַחֲזוֹר",
+      "go_home": "עבור אל הבית"
     },
     "logout": "התנתקות",
     "table": "טבלה",
@@ -120,6 +123,13 @@
     "saved_successfully": "נשמר בהצלחה",
     "deleted_successfully": "נמחק בהצלחה",
     "created_successfully": "נוצר בהצלחה",
-    "updated_successfully": "עודכן בהצלחה"
+    "updated_successfully": "עודכן בהצלחה",
+    "edit_user": "ערוך משתמש",
+    "add_new_user": "הוסף משתמש חדש",
+    "not_found": "עמוד לא נמצא",
+    "not_found_text": "מצטערים, הדף שאתה מחפש לא קיים.",
+    "unauthorized": "גישה לא מורשית",
+    "unauthorized_text": "מצטערים, אין לך הרשאה לצפות בדף זה.",
+    "edit_profile" : "ערוך פרופיל"
   }
 }

@@ -114,6 +114,8 @@ class UserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         # Create a new user with a hashed password
+        from django.utils.timezone import now
+        
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data.get('email'),
@@ -128,6 +130,7 @@ class UserSerializer(serializers.ModelSerializer):
             address=validated_data.get('address', None),
             date_of_birth=validated_data.get('dob', None),
             language='en',
+            updated_at=int(now().timestamp() * 1000)
         )
 
         return user
@@ -232,32 +235,39 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     
 class RefreshTokenObtainPairOnDomainShift(serializers.Serializer):
     @classmethod
-    def get_token(cls, user, tenant_id):
+    def get_token(cls, user, tenant_id = None):
         from rest_framework_simplejwt.tokens import RefreshToken
 
         token = RefreshToken.for_user(user)
 
         if hasattr(user, 'profile'):
-            updated_at = user.profile.updated_at
+            updated_at = 0 if user.profile.updated_at == None else user.profile.updated_at
             token['updated_at'] = updated_at
-
-        if tenant_id == 0:
-            tenant_user = TenantUser.objects.filter(user_id=user.id, tenant_id=tenant_id).values("id", "user_id", "is_admin", "tenant_id").first()
-        else:
-            tenant_user = TenantUser.objects.filter(user_id=user.id, tenant_id=tenant_id).select_related('tenant').values("id", "user_id", "is_admin", "tenant_id", "tenant__parent_id", "tenant__entity", "tenant__dsn").first()
-
-        token["is_tenant_user"] = False
-        if tenant_user:
-            # Add custom data to the token
-            user_permissions = user.get_all_permissions(tenant_user.get('tenant_id'))
-
-            token["is_tenant_user"] = True
-            token["is_admin"] = tenant_user.get('is_admin')
-            token["tenant_id"] = tenant_user.get('tenant_id', None)
-            token["parent_tenant_id"] = tenant_user.get('tenant__parent_id', 0)
-            token["entity_type"] = tenant_user.get('tenant__entity', 'admin')
-            token["dsn"] = tenant_user.get('tenant__dsn', None)
+        
+        if user.is_superuser:
+            token["is_tenant_user"] = False
+            token["is_admin"] = True
+            token["entity_type"] = 'admin'
             token["is_superuser"] = user.is_superuser
+            token['permissions'] = []
+        else:
+            if tenant_id == 0 or tenant_id == None:
+                tenant_user = TenantUser.objects.filter(user_id=user.id, tenant_id=None).values("id", "user_id", "is_admin", "tenant_id").first()
+            else:
+                tenant_user = TenantUser.objects.filter(user_id=user.id, tenant_id=tenant_id).select_related('tenant').values("id", "user_id", "is_admin", "tenant_id", "tenant__parent_id", "tenant__entity", "tenant__dsn").first()
+
+            token["is_tenant_user"] = False
+            if tenant_user:
+                # Add custom data to the token
+                user_permissions = user.get_all_permissions(tenant_user.get('tenant_id'))
+
+                token["is_tenant_user"] = True
+                token["is_admin"] = tenant_user.get('is_admin')
+                token["tenant_id"] = tenant_user.get('tenant_id', None)
+                token["parent_tenant_id"] = tenant_user.get('tenant__parent_id', 0)
+                token["entity_type"] = tenant_user.get('tenant__entity', 'admin')
+                token["dsn"] = tenant_user.get('tenant__dsn', None)
+                token["is_superuser"] = user.is_superuser
             token['permissions'] = list(user_permissions)
 
         return token

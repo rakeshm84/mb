@@ -30,7 +30,10 @@
       "action": "Action",
       "back": "Back",
       "search": "Search",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "go_back": "Go Back",
+      "go_home": "Go to Home"
     },
     "logout": "Logout",
 
@@ -121,6 +124,13 @@
     "saved_successfully": "Saved successfully.",
     "deleted_successfully": "Deleted successfully.",
     "created_successfully": "Created successfully.",
-    "updated_successfully": "Updated successfully."
+    "updated_successfully": "Updated successfully.",
+    "not_found": "Page Not Found",
+    "not_found_text": "Sorry, the page you're looking for doesn't exist.",
+    "unauthorized": "Unauthorized Access",
+    "unauthorized_text": "Sorry, you don't have permission to view this page.",
+    "edit_user": "Edit User",
+    "add_new_user": "Add New User",
+    "edit_profile" : "Edit Profile"
   }
 }
