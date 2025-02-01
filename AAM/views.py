@@ -71,7 +71,7 @@ class Create(APIView):
                     if jsonRes.get('success') == True:
                         update_res = requests.post(f"{ulm_api}update/{ulm_tenant_id}", json={"status": 1})
                         if update_res.status_code == 200:
-                            return Response({"message": "Human created successfully!"}, status=status.HTTP_201_CREATED)
+                            return Response({"message": "Human created successfully!", "status_code": status.HTTP_201_CREATED}, status=status.HTTP_201_CREATED)
                         else:
                             return Response({"message": "Something went wrong1!"}, status=status.HTTP_400_BAD_REQUEST)
                     else:
@@ -124,17 +124,27 @@ class PersonsView(BaseDatatableView):
             'length': length,
         }
         
-        # print(params)
+        token = ''
+        auth_header = request.headers.get('Authorization')    
+        if auth_header:            
+            parts = auth_header.split()
+            if len(parts) == 2:
+                token = parts[1]
+                token = token   
+        
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json',
+        }
         try:
-            response = requests.get(api_url, params=params)                          
+            response = requests.get(api_url, params=params, headers=headers)                          
             if response.status_code == 200:
                 data = response.json()               
                 return JsonResponse(data, status=status.HTTP_200_OK)
             else:                
-                return Response({"error": "Failed to fetch data", "status_code": response.status_code}, 
-                                status=status.HTTP_400_BAD_REQUEST)
+                return JsonResponse(response.json(), status=response.status_code)
         except requests.RequestException as e:           
-            return Response({"error": str(e)}, status=status.HTTP_403_FORBIDDEN)
+            return JsonResponse({"error": str(e)}, status=status.HTTP_403_FORBIDDEN)
 
     
 class RecentRegistrationView(BaseDatatableView):
@@ -163,10 +173,9 @@ class RecentRegistrationView(BaseDatatableView):
                 data = response.json()                             
                 return JsonResponse(data, status=status.HTTP_200_OK)
             else:                
-                return Response({"error": "Failed to fetch data", "status_code": response.status_code}, 
-                                status=status.HTTP_400_BAD_REQUEST)
+                return JsonResponse(response.json(), status=response.status_code)
         except requests.RequestException as e:           
-            return Response({"error": str(e)}, status=status.HTTP_403_FORBIDDEN)
+            return JsonResponse({"error": str(e)}, status=status.HTTP_403_FORBIDDEN)
         
 class RolesListView(APIView):
     permission_classes = [IsAuthenticated]
@@ -181,12 +190,15 @@ class RolesListView(APIView):
         start = request.GET.get('start', 0)
         length = request.GET.get('length', 10)
 
+        page_type = request.GET.get('page_type', None)
+
         params = {
             'search[value]': search_value,
             'order[0][column]': order_column,
             'order[0][dir]': order_dir,
             'start': start,
             'length': length,
+            'page_type': page_type
         }
 
         # headers = request.headers
@@ -210,9 +222,9 @@ class RolesListView(APIView):
             if response.status_code == 200:
                 data = response.json()                             
                 return JsonResponse(data, status=status.HTTP_200_OK)
-            else:                
-                return Response({"error": "Failed to fetch data", "status_code": response.status_code}, 
-                                status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response(response.json(), 
+                                status=response.status_code)
         except requests.RequestException as e:       
             # logger.info(f"Get roles Exception on AAM: {str(e)}")    
             return Response({"error": str(e)}, status=status.HTTP_403_FORBIDDEN)
@@ -343,8 +355,7 @@ class FetchRoleView(APIView):
                                          
                 return JsonResponse(data, status=status.HTTP_200_OK)
             else:                
-                return Response({"error": "Failed to fetch data", "status_code": response.status_code}, 
-                                status=status.HTTP_400_BAD_REQUEST)
+                return JsonResponse(response.json(), status=response.status_code)
         except requests.RequestException as e:           
             return Response({"error": str(e)}, status=status.HTTP_403_FORBIDDEN)
         
@@ -377,7 +388,7 @@ class SetLanguageView(APIView):
             params = {
                 'selected_language': selected_language
             }
-            response = requests.post(api_url, params=params, headers=headers)  
+            response = requests.post(api_url, json=params, headers=headers)  
             
             if response.status_code == 200:
                 data = response.json()
@@ -447,9 +458,11 @@ class UsersListView(APIView):
             if response.status_code == 200:
                 data = response.json()                             
                 return JsonResponse(data, status=status.HTTP_200_OK)
-            else:                
-                return Response({"error": "Failed to fetch data", "status_code": response.status_code}, 
-                                status=status.HTTP_400_BAD_REQUEST)
+            elif response.status_code == 403:
+                data = response.json() 
+                return Response(data, status=status.HTTP_403_FORBIDDEN)
+            else:
+                return JsonResponse(response.json(), status=response.status_code)
         except requests.RequestException as e:           
             return Response({"error": str(e)}, status=status.HTTP_403_FORBIDDEN)
         
@@ -499,16 +512,17 @@ class UserEditView(APIView):
             'Content-Type': 'application/json',          
         }
 
+        params = {"permission": "user.can_edit"}
+
         try:
-            response = requests.get(api_url, headers=headers)
+            response = requests.get(api_url, params=params, headers=headers)
                
             if response.status_code == 200:
                 data = response.json()   
                                          
                 return JsonResponse(data, status=status.HTTP_200_OK)
             else:                
-                return Response({"error": "Failed to fetch data", "status_code": response.status_code}, 
-                                status=status.HTTP_400_BAD_REQUEST)
+                return JsonResponse(response.json(), status=response.status_code)
         except requests.RequestException as e:           
             return Response({"error": str(e)}, status=status.HTTP_403_FORBIDDEN)
         
@@ -519,6 +533,7 @@ class UserUpdateView(APIView):
         ulm_api = settings.ULM_API_URL + "api/"
         api_url = f"{ulm_api}user/{id}/edit/"
         payload = request.data
+        payload.update({"permission":"user.can_edit"})
         token = ''
         auth_header = request.headers.get('Authorization')    
         if auth_header:            
@@ -566,7 +581,7 @@ class BindExistingUser(APIView):
             if response.status_code == 201:      
                 return JsonResponse(response.json(), status=response.status_code)
             else:
-                return JsonResponse({"message": "Something went wrong."}, status=response.status_code)
+                return JsonResponse(response.json(), status=response.status_code)
         except requests.exceptions.RequestException as e:
             return JsonResponse({"message": "Failed to connect to the API server.", "details": str(e)}, status=503)
 
